@@ -63,6 +63,7 @@
 
 ## Telemetry upkeep
 
+- This fork keeps telemetry permanently off: `POSTHOG_KEY` in `server/telemetry.ts` stays empty (user decision 2026-10-29, `docs/TELEMETRY-SPEC.md` §6). `server/telemetry.test.ts` fails if an upstream merge brings a key back; empty it again, do not loosen the test.
 - When a feature adds a switch or a core action worth counting, decide whether the heartbeat gets an `f_*`/`c_*` field (`docs/TELEMETRY-SPEC.md` §4). If it does, change §4, `heartbeatProperties` and the key-set test in `server/telemetry.test.ts` together, and the notice text if what is sent changes. Otherwise say so in the delivery note.
 - Daemon-side failures are logged with `logFailure` (`server/error-report.ts`), never a bare `console.error`; `server/error-report.test.ts` fails otherwise. Keep the label a fixed string: ids, paths and messages go in the log-only `context` argument, never in the label.
 - Tests and fixture daemons run with telemetry off (`NODE_ENV=test`, `FLOWLY_TELEMETRY=0`). Check PostHog end to end only when telemetry code changes, or once before a release on one machine; switch that machine off afterwards and keep its install excluded (§8).

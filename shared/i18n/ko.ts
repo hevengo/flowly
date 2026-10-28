@@ -29,6 +29,7 @@ const catalog: Catalog = {
   "Usage data": "사용 데이터",
   "Send anonymous usage data": "익명 사용 데이터 보내기",
   "Turned off by DO_NOT_TRACK on this computer.": "이 컴퓨터의 DO_NOT_TRACK 설정으로 꺼져 있습니다.",
+  "Turned off in this build.": "이 빌드에서는 꺼져 있습니다.",
   "Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.": "하루 한 번: 버전, 켜진 기능, 사용 횟수. 오류 시: Flowly 코드의 어디에서 났는지. 내용, 경로, 코드는 보내지 않습니다.",
   "Flowly now sends anonymous usage data: once a day, versions, which features are on and usage counts; on errors, where in Flowly's code. Never your content, paths or code. You can turn it off in Settings.": "이제 Flowly는 익명 사용 데이터를 보냅니다: 하루 한 번 버전, 켜진 기능, 사용 횟수, 오류 시 Flowly 코드의 어디에서 났는지. 내용, 경로, 코드는 보내지 않습니다. 설정에서 끌 수 있습니다.",
   "Running sweep": "실행 중 스윕",

@@ -656,7 +656,7 @@ export default function contribute(host: PluginServerContext) {
       recordLifecycle(store, board, identity, "agent.permission_requested", undefined, { tool: event.request.name || event.request.kind }),
     );
   });
-  // Anonymous daily heartbeat (TELEMETRY-SPEC); off by the setting, DO_NOT_TRACK or FLOWLY_TELEMETRY=0.
+  // Anonymous daily heartbeat (TELEMETRY-SPEC); off by the setting, DO_NOT_TRACK or FLOWLY_TELEMETRY=0, and always off while POSTHOG_KEY is empty.
   const ready = <T,>(state: { status: string; values?: unknown } | null, parse: (values: unknown) => T) => parse(state?.status === "ready" ? state.values : {});
   const telemetry = new TelemetryService({
     directory: store.directory,
@@ -716,7 +716,7 @@ export default function contribute(host: PluginServerContext) {
   setErrorSink((source, error, handled) => void telemetry.reportError(source, error, handled));
   const onUncaught = (error: Error) => reportError("uncaught", error, false);
   process.on("uncaughtExceptionMonitor", onUncaught);
-  server.handle(rpc.telemetryStatus, () => ({ forcedOff: telemetry.forcedOff() }));
+  server.handle(rpc.telemetryStatus, () => ({ forcedOff: telemetry.forcedOff(), builtOff: telemetry.builtOff() }));
   console.log("Flowly store ready:", store.directory);
   server.before("agent.session_open", async ({ request }, { paseo }) => {
     tools.attach(paseo);

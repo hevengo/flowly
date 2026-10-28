@@ -1,5 +1,11 @@
 # Implementation progress
 
+## Telemetry hard-off (card "hard disable telementry") — 2026-10-29
+
+- `POSTHOG_KEY` is empty, so the heartbeat and `$exception` reports send nothing and no `telemetry.json` is created, whatever the setting or environment says. `TelemetryService.builtOff()` reports it, and `telemetry.status` now returns `builtOff`. Settings → General and the tour's last page show *Send anonymous usage data* off and locked with *Turned off in this build.* (new string in all catalogs). [TELEMETRY-SPEC §5, §6](TELEMETRY-SPEC.md)
+- Guard: a test in `server/telemetry.test.ts` fails when the key is not empty, for example after an upstream merge.
+- README, OVERVIEW and What's new 1.7.0 are unchanged (user's choice). Onboarding: no new tip; the tour's switch shows the locked state on its own.
+
 ## Search (card "搜索功能") — 2026-10-27
 
 - Focus from search: a hit row opens the card at its section and item (Progress, Activity, Workpad, Ideas, Artifacts), widening Activity's last-12 window, Workpad/Artifacts pages and Ideas → Closed to reach it, then a short accent ring; the stored section choices are untouched ([DRAWER-SPEC](DRAWER-SPEC.md#focus-from-search), `client/drawer-focus.tsx`).

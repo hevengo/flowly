@@ -29,6 +29,7 @@ const catalog: Catalog = {
   "Usage data": "使用数据",
   "Send anonymous usage data": "发送匿名使用数据",
   "Turned off by DO_NOT_TRACK on this computer.": "已被本机的 DO_NOT_TRACK 关闭。",
+  "Turned off in this build.": "已在此构建中关闭。",
   "Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.": "每天一次：版本、开启了哪些功能和使用次数。出错时：出错位置在 Flowly 代码的哪里。不会发送你的内容、路径或代码。",
   "Flowly now sends anonymous usage data: once a day, versions, which features are on and usage counts; on errors, where in Flowly's code. Never your content, paths or code. You can turn it off in Settings.": "Flowly 现在会发送匿名使用数据：每天一次，包括版本、开启了哪些功能和使用次数；出错时，发送出错位置在 Flowly 代码的哪里。不会发送你的内容、路径或代码。可以在设置中关闭。",
   "Running sweep": "扫光动画",

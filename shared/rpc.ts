@@ -814,5 +814,5 @@ export const restoreStorage = defineRpc({
 export const exportStorage = defineRpc({ name: "storage.export-json", input: z.strictObject({}), output: z.strictObject({ retired: z.string().nullable() }) });
 export const useSqliteStorage = defineRpc({ name: "storage.use-sqlite", input: z.strictObject({}), output: z.strictObject({}) });
 
-/** Whether telemetry is forced off on the daemon's host by DO_NOT_TRACK / FLOWLY_TELEMETRY=0 / NODE_ENV=test (TELEMETRY-SPEC §5, §6). */
-export const telemetryStatus = defineRpc({ name: "telemetry.status", input: z.strictObject({}), output: z.object({ forcedOff: z.boolean() }) });
+/** Whether telemetry is forced off on the daemon's host by DO_NOT_TRACK / FLOWLY_TELEMETRY=0 / NODE_ENV=test, or by a build without a PostHog key (`builtOff`) (TELEMETRY-SPEC §5, §6). */
+export const telemetryStatus = defineRpc({ name: "telemetry.status", input: z.strictObject({}), output: z.object({ forcedOff: z.boolean(), builtOff: z.boolean().default(false) }) });

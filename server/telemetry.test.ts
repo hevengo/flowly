@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "vitest";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { bucket, countWindow, forcedOff, heartbeatProperties, modelTable, TelemetryService, uiLocale, type TelemetrySnapshot } from "./telemetry";
+import { bucket, countWindow, forcedOff, heartbeatProperties, modelTable, POSTHOG_KEY, TelemetryService, uiLocale, type TelemetrySnapshot } from "./telemetry";
 import { FLOWLY_VERSION } from "../shared/version";
 import type { FlowEntry } from "../shared/insights";
 import pkg from "../package.json";
@@ -39,13 +39,13 @@ const expectedKeys = [
   "c_cards_created", "c_turns", "c_deliveries", "c_next_moves", "c_next_moves_picked", "c_ideas_proposed", "c_ideas_accepted", "c_ideas_dismissed", "c_memory_proposed", "c_memory_confirmed", "c_wrapups", "models",
 ].sort();
 
-function harness(directory: string, options: { env?: NodeJS.ProcessEnv; enabled?: () => Promise<boolean>; status?: number; throws?: boolean; now?: () => number; events?: FlowEntry[] } = {}) {
+function harness(directory: string, options: { env?: NodeJS.ProcessEnv; apiKey?: string; enabled?: () => Promise<boolean>; status?: number; throws?: boolean; now?: () => number; events?: FlowEntry[] } = {}) {
   const calls: { url: string; body: { api_key: string; event: string; distinct_id: string; properties: Record<string, unknown> } }[] = [];
   let enabled = true;
   const service = new TelemetryService({
     directory,
     env: options.env ?? {},
-    apiKey: "phc_test",
+    apiKey: options.apiKey ?? "phc_test",
     now: options.now ?? (() => NOW),
     enabled: options.enabled ?? (async () => enabled),
     snapshot: async () => snapshot,
@@ -139,6 +139,18 @@ test("§9-4: DO_NOT_TRACK, FLOWLY_TELEMETRY=0 and NODE_ENV=test send nothing", a
   }
   expect(forcedOff({ DO_NOT_TRACK: "0" })).toBe(false);
   expect(forcedOff({})).toBe(false);
+});
+
+test("§6: this fork ships without a PostHog key, so nothing is sent and no install id is created, setting on or not", async () => {
+  expect(POSTHOG_KEY, "telemetry is hard-off in this fork: keep POSTHOG_KEY empty (TELEMETRY-SPEC §6)").toBe("");
+  const root = await dir();
+  const { service, calls } = harness(root, { apiKey: POSTHOG_KEY, enabled: async () => true });
+  expect(service.builtOff()).toBe(true);
+  expect(service.forcedOff()).toBe(false);
+  expect(await service.check()).toBe("off");
+  expect(await service.reportError("test", Object.assign(new Error("boom"), { code: "EBOOM" }))).toBe(false);
+  expect(calls).toHaveLength(0);
+  expect(await readdir(root)).toEqual([]);
 });
 
 test("§9-5: network errors and 500s neither throw nor move lastSentAt, and retry on the next check", async () => {

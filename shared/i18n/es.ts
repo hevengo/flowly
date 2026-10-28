@@ -29,6 +29,7 @@ const catalog: Catalog = {
   "Usage data": "Datos de uso",
   "Send anonymous usage data": "Enviar datos de uso anónimos",
   "Turned off by DO_NOT_TRACK on this computer.": "Desactivado por DO_NOT_TRACK en este equipo.",
+  "Turned off in this build.": "Desactivado en esta compilación.",
   "Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.": "Una vez al día: versiones, qué funciones están activas y recuentos de uso. Ante errores: en qué parte del código de Flowly. Nunca tu contenido, rutas ni código.",
   "Flowly now sends anonymous usage data: once a day, versions, which features are on and usage counts; on errors, where in Flowly's code. Never your content, paths or code. You can turn it off in Settings.": "Flowly ahora envía datos de uso anónimos: una vez al día, versiones, qué funciones están activas y recuentos de uso; ante errores, en qué parte del código de Flowly. Nunca tu contenido, rutas ni código. Puedes desactivarlo en Ajustes.",
   "Running sweep": "Barrido de ejecución",

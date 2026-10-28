@@ -14,8 +14,12 @@ import { exceptionReport } from "./error-report";
  */
 
 export const POSTHOG_ENDPOINT = "https://us.i.posthog.com/i/v0/e/";
-/** Write-only project key (`phc_…`), public by design and safe in source; rotation in TELEMETRY-SPEC §8. Empty: nothing is sent. */
-export const POSTHOG_KEY = "phc_CUgzT9nWDYNm2XSqdQLAHyVc27GSvJyFPiEDrkSM6ZYS";
+/**
+ * The main switch. Empty: nothing is sent, no install id is created, and Settings shows usage data
+ * off and locked. This fork keeps it empty for good (TELEMETRY-SPEC §6); `server/telemetry.test.ts`
+ * fails when a key comes back, e.g. from an upstream merge.
+ */
+export const POSTHOG_KEY = "";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -255,6 +259,10 @@ export class TelemetryService {
   }
   forcedOff() {
     return forcedOff(this.deps.env);
+  }
+  /** No PostHog key in this build: off whatever the setting or environment says (§6). */
+  builtOff() {
+    return !this.deps.apiKey;
   }
   /** First check 5 min after load, then hourly (§3.2); timers never keep the daemon alive. */
   start() {

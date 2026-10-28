@@ -113,12 +113,13 @@ export function UsageDataGroup({ bare = false }: { bare?: boolean }) {
   const telemetry = useStored(useSettings(telemetrySettings), telemetrySettingsValues);
   const readStatus = useRpc(rpc.telemetryStatus);
   const status = useQuery({ queryKey: ["flowly", "telemetry-status"], queryFn: () => readStatus({}), staleTime: Infinity });
-  const forced = status.data?.forcedOff === true;
+  const builtOff = status.data?.builtOff === true;
+  const forced = builtOff || status.data?.forcedOff === true;
   return (
     <SettingsGroup title={bare ? undefined : t("Usage data")}>
       <SettingSwitch
         title={t("Send anonymous usage data")}
-        detail={forced ? t("Turned off by DO_NOT_TRACK on this computer.") : t("Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.")}
+        detail={builtOff ? t("Turned off in this build.") : forced ? t("Turned off by DO_NOT_TRACK on this computer.") : t("Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.")}
         value={!forced && (telemetry.values?.enabled ?? true)}
         disabled={forced || telemetry.busy}
         onChange={(enabled) => telemetry.save({ enabled })}

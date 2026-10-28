@@ -1,6 +1,6 @@
 # 匿名使用数据（遥测）
 
-Status: **已实现，待随 1.7.0 发布**（2026-10-26，卡片“遥测建设”；实现：`server/telemetry.ts`）。`POSTHOG_KEY` 已于 2026-10-26 填入 PostHog US 项目的 project token；常量为空时不发送。用户决定：使用 PostHog Cloud（最初定为 EU 区；2026-10-26 维护者的项目建在 US 区，用户决定改用 US 入口）；由 daemon 直接调用 capture HTTP API，不引入 SDK；每天发送一次心跳；字段按白名单；默认开启、可以关闭；遵守 `DO_NOT_TRACK`。2026-10-26 补充决定：
+Status: **已实现，待随 1.7.0 发布**（2026-10-26，卡片“遥测建设”；实现：`server/telemetry.ts`）。`POSTHOG_KEY` 已于 2026-10-26 填入 PostHog US 项目的 project token；常量为空时不发送。**本 fork（hevengo/flowly）2026-10-29 起永久关闭遥测：`POSTHOG_KEY` 为空（第 6 节）。** 用户决定：使用 PostHog Cloud（最初定为 EU 区；2026-10-26 维护者的项目建在 US 区，用户决定改用 US 入口）；由 daemon 直接调用 capture HTTP API，不引入 SDK；每天发送一次心跳；字段按白名单；默认开启、可以关闭；遵守 `DO_NOT_TRACK`。2026-10-26 补充决定：
 
 - 用户被告知之前就可以发送，关闭之后不再发送；
 - 设置里只放简要说明，不提供逐字段预览，具体内容以开源代码和本 spec 为准；
@@ -158,7 +158,8 @@ Content-Type: application/json
 
 - 新增 host 设置 `telemetry`（`shared/settings.ts`）：`{ enabled: boolean, default true }`。
 - 放在 **Settings → General**，单独一组 **Usage data**，只有一个开关 **Send anonymous usage data**。说明行（涉及隐私，所以按 UI 文案规则保留）只做简要说明，不逐项列字段：*Once a day: versions, which features are on and usage counts. On errors: where in Flowly's code. Never your content, paths or code.* 不提供逐字段预览（用户决定 2026-10-26：项目开源，发送内容以 `server/telemetry.ts` 和本 spec 为准，README 的 Telemetry 一节链接到这两处）。
-- 被环境变量强制关闭时（第 6 节），开关显示为关、不可操作，说明行改为 *Turned off by DO_NOT_TRACK on this computer.* 客户端通过 RPC `telemetry.status`（返回 `{ forcedOff: boolean }`，有 schema 校验）得知这个状态。
+- 被环境变量强制关闭时（第 6 节），开关显示为关、不可操作，说明行改为 *Turned off by DO_NOT_TRACK on this computer.* 客户端通过 RPC `telemetry.status`（返回 `{ forcedOff: boolean, builtOff: boolean }`，有 schema 校验）得知这个状态。
+- 构建里没有 key（`builtOff`，第 6 节）时同样显示为关、不可操作，说明行是 *Turned off in this build.*，优先于上一条。
 - 关闭后**立即生效**，从下一次检查开始不再发送任何东西，包括关闭这个动作本身。重新打开后照常发送。
 - daemon 读设置时使用 `*Values()` 解析函数（存储的值可能缺字段）。
 
@@ -168,6 +169,8 @@ Content-Type: application/json
 
 - `DO_NOT_TRACK` 非空且不等于 `0`（https://consoledonottrack.com 约定）；
 - `FLOWLY_TELEMETRY=0`（或 `off` / `false`）。
+
+**总开关**：`server/telemetry.ts` 的 `POSTHOG_KEY` 为空时，心跳和 `$exception` 都不发送，也不生成 `telemetry.json`，与设置和环境变量无关。本 fork（hevengo/flowly）2026-10-29 起保持为空（用户决定：永久关闭遥测，设置页显示为关、不可操作；README、OVERVIEW 和 What's new 1.7.0 的文字不改）。`server/telemetry.test.ts` 在 key 不为空时失败，从 upstream 合并时如果 key 回来了，要把它重新清空。
 
 另外两种情况也一律不发，以免开发和测试的数据混进统计：
 
