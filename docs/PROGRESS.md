@@ -1,5 +1,11 @@
 # Implementation progress
 
+## Open workspace from a card (card "button to open associated workspace") — 2026-10-29
+
+- Board cards get an **Open workspace** button (`ArrowUpRight`) under `…` in their top-right action column, same size and visibility as `…`; it calls the host's `navigation.openWorkspace` for the card's workspace on its host (`openNativeWorkspace`, `client/session-state.ts`). Shown only when the host offers it and the workspace is live (the *Workspace unavailable* test). The card's context menu and the `…` action sheet list *Open workspace* after *Open details*. Short cards grow to fit the two-button column; titles keep their width. [CARD-DISPLAY-SPEC §7](CARD-DISPLAY-SPEC.md#7-open-workspace-button)
+- The card sidebar's header gets the same button left of the pencil (Edit), at the user's request, disabled while the workspace is checked or unavailable. This replaces the 2026-10-14 "No Open workspace action" ([DRAWER-SPEC](DRAWER-SPEC.md#open-workspace)).
+- Two new strings (*Open workspace*, *Open workspace for {title}*) in all catalogs. Onboarding: no tour copy or tip; the button is on the card itself. Telemetry: no heartbeat field.
+
 ## Telemetry hard-off (card "hard disable telementry") — 2026-10-29
 
 - `POSTHOG_KEY` is empty, so the heartbeat and `$exception` reports send nothing and no `telemetry.json` is created, whatever the setting or environment says. `TelemetryService.builtOff()` reports it, and `telemetry.status` now returns `builtOff`. Settings → General and the tour's last page show *Send anonymous usage data* off and locked with *Turned off in this build.* (new string in all catalogs). [TELEMETRY-SPEC §5, §6](TELEMETRY-SPEC.md)

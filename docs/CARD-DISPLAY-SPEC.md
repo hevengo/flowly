@@ -55,3 +55,24 @@ New one-time tip `card-display`, shown when the current project has 6 or more ac
 4. Always-shown signals stay when every switch is off.
 5. Invalid stored values fall back to defaults; older stored documents get the defaults.
 6. All new strings in every catalog; `npm test` passes.
+
+## 7. Open workspace button
+
+Status: implemented 2026-10-29. Card: button to open associated workspace.
+
+Each board card can take the user straight to its workspace in Paseo (the native workspace view with its tabs, terminals and sessions).
+
+- **Where**: an `ArrowUpRight` icon button (the plugin's "Open in Paseo" icon) in the card's top-right action column, directly under the `…` actions button. Same size as `…` (26 pt desktop, 40 pt touch) and the same visibility: always on touch and on non-draggable cards, on hover or while the card is selected on the draggable desktop board.
+- **Layout**: the column sits in the right padding the card already reserves for `…`, so titles keep their width. A card that shows the button is at least `2 × button + 8` tall (60 pt desktop, 88 pt touch), so the column never hangs below a short card.
+- **Action**: `navigation.openWorkspace({ workspaceId: task.workspaceId, serverId: host.id })` (`openNativeWorkspace` in `client/session-state.ts`). Pressing it does not open the card sidebar and does not start a drag.
+- **When it shows**: only when the host offers `navigation.openWorkspace` (older hosts and surfaces without navigation get nothing) and the card's workspace is in Paseo's live workspace list, the same test as the *Workspace unavailable* signal. Missing, archived and wrapped-up workspaces get no button.
+- **Menus**: the card's context menu (right-click / long-press) and the `…` action sheet list **Open workspace** right after *Open details*, under the same conditions.
+- Not on the Settings → Cards preview or the tour's demo cards (they pass no handler). Not configurable: it is an action, not a field. The card sidebar has its own button in its header, left of Edit ([DRAWER-SPEC](DRAWER-SPEC.md#open-workspace)).
+- No onboarding tip or tour copy: the button is on the card itself. No telemetry field.
+
+Acceptance:
+
+1. A card with an available workspace shows the button under `…`; pressing it opens that workspace on the card's host.
+2. No button (and no menu entry) without `navigation.openWorkspace` or when the workspace is unavailable.
+3. Short cards grow to fit the column; titles do not get narrower.
+4. Both strings (`Open workspace`, `Open workspace for {title}`) are in every catalog; `npm test` passes.

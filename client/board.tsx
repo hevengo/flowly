@@ -72,6 +72,7 @@ import { LaneList } from "./lane-list";
 import { perfConfigure, perfMark, usePerfRender } from "./perf";
 import { laneRows, sameRows } from "./lane-rows";
 import { LiveTaskCard, type CardDrag, type LiveTaskCardProps } from "./card";
+import { openNativeWorkspace } from "./session-state";
 import { useConnections } from "./connectors";
 import { cardProgress, useSummaries } from "./task-progress";
 import { LocaleRoot } from "./i18n";
@@ -830,10 +831,18 @@ function BoardContent(
     );
   };
   const openMenu = useMenuOpener();
+  // Open the card's workspace in Paseo (CARD-DISPLAY-SPEC §7): only a host that can, only a live workspace.
+  const canOpenWorkspace = typeof props.navigation?.openWorkspace === "function";
+  const openCardWorkspace = useStableCallback((card: Task) => openNativeWorkspace(props.navigation, card.workspaceId, props.host.id));
+  const workspaceMenuEntry = (card: Task) =>
+    canOpenWorkspace && cardIndex.workspaceIds.has(card.workspaceId)
+      ? [{ id: "workspace", label: t("Open workspace"), icon: "ArrowUpRight", onPress: () => openCardWorkspace(card) }]
+      : [];
   const cardMenu = (card: Task): MenuEntry[] => {
     const locked = pending || !!project?.archivedAt || !!card.archivedAt;
     return [
       { id: "open", label: t("Open details"), icon: "PanelRightOpen", onPress: () => setTask(card.id) },
+      ...workspaceMenuEntry(card),
       {
         id: "start",
         label: t("Start session"),
@@ -1296,6 +1305,7 @@ function BoardContent(
       disabled={pending || !!project?.archivedAt || !!t.archivedAt}
       onOpen={openCard}
       onActions={openCardActions}
+      onOpenWorkspace={canOpenWorkspace ? openCardWorkspace : undefined}
       menuFor={cardMenuFor}
     />
   );
@@ -2268,6 +2278,17 @@ function BoardContent(
                       setActionTask(null);
                     }}
                   />
+                  {workspaceMenuEntry(actionTask).map((entry) => (
+                    <Row
+                      key={entry.id}
+                      title={entry.label}
+                      icon={entry.icon}
+                      onPress={() => {
+                        setActionTask(null);
+                        entry.onPress();
+                      }}
+                    />
+                  ))}
                   <Row
                     title={t("Start session")}
                     icon="Play"

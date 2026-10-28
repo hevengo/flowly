@@ -26,11 +26,13 @@ export type CardDrag = {
 
 type TaskCardProps = Parameters<typeof TaskCard>[0];
 
-export type LiveTaskCardProps = Omit<TaskCardProps, "output" | "menu" | "onOpen" | "onActions"> & {
+export type LiveTaskCardProps = Omit<TaskCardProps, "output" | "menu" | "onOpen" | "onActions" | "onOpenWorkspace"> & {
   outputSession?: OutputSession | null;
   /** Stable handlers shared by all cards; they receive the card's task (PERFORMANCE-SPEC §3). */
   onOpen(task: Task): void;
   onActions(task: Task): void;
+  /** Absent when the host cannot open workspaces; used only while the card's workspace is available. */
+  onOpenWorkspace?(task: Task): void;
   menuFor?(task: Task): MenuEntry[];
 };
 
@@ -55,6 +57,7 @@ export const LiveTaskCard = memo(function LiveTaskCard({
   outputSession,
   onOpen: openTask,
   onActions: taskActions,
+  onOpenWorkspace: openTaskWorkspace,
   menuFor,
   ...props
 }: LiveTaskCardProps) {
@@ -69,7 +72,17 @@ export const LiveTaskCard = memo(function LiveTaskCard({
   );
   const onOpen = useCallback(() => openTask(task), [openTask, task]);
   const onActions = useCallback(() => taskActions(task), [taskActions, task]);
-  return <TaskCard {...props} output={output} menu={menu} onOpen={onOpen} onActions={onActions} />;
+  const onOpenWorkspace = useCallback(() => openTaskWorkspace?.(task), [openTaskWorkspace, task]);
+  return (
+    <TaskCard
+      {...props}
+      output={output}
+      menu={menu}
+      onOpen={onOpen}
+      onActions={onActions}
+      onOpenWorkspace={openTaskWorkspace && props.available ? onOpenWorkspace : undefined}
+    />
+  );
 }, sameLiveCard);
 
 export function TaskCard({
@@ -99,6 +112,7 @@ export function TaskCard({
   drag,
   onOpen,
   onActions,
+  onOpenWorkspace,
   menu,
 }: {
   task: Task;
@@ -138,6 +152,8 @@ export function TaskCard({
   drag?: CardDrag;
   onOpen(): void;
   onActions(): void;
+  /** Shows the Open workspace button under the actions button (CARD-DISPLAY-SPEC §7). */
+  onOpenWorkspace?(): void;
   /** Context-menu handlers (right-click / long-press) for the card body. */
   menu?: object;
 }) {
@@ -209,6 +225,7 @@ export function TaskCard({
   );
   const signals = summaryState === "ready" || summaryState === "stale" ? summary : undefined;
   const showActions = !drag || touch || hovered || selected;
+  const actionSize = touch ? 40 : 26;
   const accent = display.priority ? priorityAccent(colors, task.priority) : null;
   const lines = activityLines(display.activity, !!progress?.state, !!output);
   // A session is working: the card edge carries a slow marquee (MOTION-SPEC, running state).
@@ -292,6 +309,8 @@ export function TaskCard({
           paddingTop: space[2] + 2,
           paddingBottom: space[2] + 2,
           paddingRight: space[3] + 24,
+          // The action column (actions, then Open workspace) never hangs below the card.
+          minHeight: onOpenWorkspace ? 2 * actionSize + 8 : undefined,
           gap: space[2],
           opacity: pressed ? 0.8 : 1,
           // No browser focus ring; focus is shown with the card's own accent border.
@@ -367,10 +386,18 @@ export function TaskCard({
       >
         <IconButton
           icon="Ellipsis"
-          size={touch ? 40 : 26}
+          size={actionSize}
           label={t("Actions for {title}", { title: task.title })}
           onPress={onActions}
         />
+        {onOpenWorkspace && (
+          <IconButton
+            icon="ArrowUpRight"
+            size={actionSize}
+            label={t("Open workspace for {title}", { title: task.title })}
+            onPress={onOpenWorkspace}
+          />
+        )}
       </View>
     </Animated.View>
   );

@@ -4,6 +4,7 @@ import {
   samePreviewTask,
   turnEventKey,
   openNativeSession,
+  openNativeWorkspace,
   recentSessionOutput,
   pendingEchoes,
   groupTranscript,
@@ -69,6 +70,18 @@ test("native opening targets the exact session and host, and tolerates absent na
   ).toBe(true);
   expect(openAgent).toHaveBeenCalledWith({ agentId: "a", serverId: "host" });
   expect(openNativeSession(undefined, "a", "host")).toBe(false);
+});
+test("workspace opening targets the card's workspace and host, and tolerates absent navigation", () => {
+  const openWorkspace = vi.fn();
+  expect(
+    openNativeWorkspace({ openAgent: vi.fn(), openWorkspace }, "ws", "host"),
+  ).toBe(true);
+  expect(openWorkspace).toHaveBeenCalledWith({ workspaceId: "ws", serverId: "host" });
+  expect(openNativeWorkspace(undefined, "ws", "host")).toBe(false);
+  // An older host without openWorkspace, or a card without a workspace id.
+  expect(openNativeWorkspace({ openAgent: vi.fn() } as never, "ws", "host")).toBe(false);
+  expect(openNativeWorkspace({ openAgent: vi.fn(), openWorkspace }, "", "host")).toBe(false);
+  expect(openWorkspace).toHaveBeenCalledTimes(1);
 });
 test("preview extracts readable text with reader-facing author labels, without a display cap", () => {
   const output = recentSessionOutput([

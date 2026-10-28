@@ -152,6 +152,8 @@ const catalog: Catalog = {
   "Drag this card with the mouse or open task actions to change status.": "用鼠标拖动此卡片，或打开任务操作来更改状态。",
   "Open details and agent sessions.": "打开详情和智能体会话。",
   "Actions for {title}": "{title} 的操作",
+  "Open workspace": "打开工作区",
+  "Open workspace for {title}": "打开 {title} 的工作区",
   "Needs you": "需要你处理",
   "Waiting on {waiting}": "正在等待 {waiting}",
   "Workspace unavailable": "工作区不可用",

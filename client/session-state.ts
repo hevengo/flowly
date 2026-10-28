@@ -66,6 +66,17 @@ export function openNativeSession(
   return true;
 }
 
+/** Opens a card's workspace in Paseo (CARD-DISPLAY-SPEC §7); false when the host cannot. */
+export function openNativeWorkspace(
+  navigation: PluginSurfaceProps["navigation"],
+  workspaceId: string,
+  hostId: string,
+): boolean {
+  if (typeof navigation?.openWorkspace !== "function" || !workspaceId) return false;
+  navigation.openWorkspace({ workspaceId, serverId: hostId });
+  return true;
+}
+
 /** Readable entries of a loaded timeline window (SESSION-PANE-SPEC §1: no display cap). */
 export function recentSessionOutput(
   entries: readonly {

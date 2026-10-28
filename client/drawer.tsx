@@ -56,7 +56,7 @@ import { WrapupModal } from "./wrapup";
 import { currentWrapup } from "../shared/wrapup-state";
 import { useComposer } from "./composer";
 import { eventPoint, menuHandlers, useMenuOpener, type MenuEntry, type Point } from "./context-menu";
-import { openNativeSession } from "./session-state";
+import { openNativeSession, openNativeWorkspace } from "./session-state";
 import { cardQuestions } from "../shared/progress";
 import { PendingRequests } from "./session-question";
 import { pendingRequests, type PendingRequest, type PermissionReply } from "../shared/permission-question";
@@ -917,6 +917,15 @@ function TaskDrawerView({
                 {!!task.archivedAt && <Badge>{t("Archived")}</Badge>}
                 {legacy && <Badge>{t("Legacy")}</Badge>}
               </View>
+              {typeof navigation?.openWorkspace === "function" && (
+                // DRAWER-SPEC, Open workspace: disabled, not hidden, while the workspace is checked or unavailable.
+                <IconButton
+                  icon="ArrowUpRight"
+                  label={t("Open workspace")}
+                  disabled={!active || unavailable}
+                  onPress={() => openNativeWorkspace(navigation, task.workspaceId, hostId)}
+                />
+              )}
               <IconButton icon="Pencil" label={t("Edit task")} disabled={!active || sending} onPress={onEdit} />
               <IconButton
                 icon="Ellipsis"

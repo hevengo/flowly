@@ -152,6 +152,8 @@ const catalog: Catalog = {
   "Drag this card with the mouse or open task actions to change status.": "Перетащите эту карточку мышью или откройте действия с задачей, чтобы сменить статус.",
   "Open details and agent sessions.": "Открывает подробности и сессии агентов.",
   "Actions for {title}": "Действия: {title}",
+  "Open workspace": "Открыть рабочее пространство",
+  "Open workspace for {title}": "Открыть рабочее пространство: {title}",
   "Needs you": "Нужны вы",
   "Waiting on {waiting}": "Ожидает: {waiting}",
   "Workspace unavailable": "Рабочее пространство недоступно",
