@@ -136,7 +136,7 @@ import { WhatsNewWindow } from "./whats-new-window";
 import { t, tn } from "../shared/i18n";
 import { PROJECT_UNAVAILABLE, gone } from "../shared/card-detail";
 import { workpadEnabled } from "../shared/workpad";
-import { cardDisplay } from "../shared/card-display";
+import { cardDisplay, cardWorkspace } from "../shared/card-display";
 import { parentOf } from "../shared/subagents";
 
 /** One-time tip texts (ONBOARDING-SPEC §5). */
@@ -916,7 +916,9 @@ function BoardContent(
       else agentsByWorkspace.set(a.workspaceId, [a]);
     }
     const workspaceIds = new Set((resources.data?.workspaces || []).map((w) => w.id));
-    return { agentsByWorkspace, workspaceIds };
+    // Worktree or local, for the card's meta row (CARD-DISPLAY-SPEC §8).
+    const workspaceKinds = new Map((resources.data?.workspaces || []).map((w) => [w.id, cardWorkspace(w.kind)]));
+    return { agentsByWorkspace, workspaceIds, workspaceKinds };
   }, [agents.data, resources.data]);
   const openIdeaCount = useMemo(() => {
     const counts = new Map<string, number>();
@@ -1274,6 +1276,7 @@ function BoardContent(
       task: t,
       legacy: !!project && isLegacyScope(t, project),
       available: cardIndex.workspaceIds.has(t.workspaceId),
+      workspace: cardIndex.workspaceKinds.get(t.workspaceId) ?? null,
       wrapped: (t.status === "done" || t.status === "cancelled") && !!facts?.wrapped,
       running: sessions.filter((a) => a.status === "running").length,
       sessions: sessions.length,

@@ -192,6 +192,7 @@ export class BoardService {
           name: w.name || w.id,
           path: w.workspaceDirectory,
           status: w.status,
+          kind: w.workspaceKind,
           repoPaths: await match(w.workspaceDirectory),
           owner:
             projects.find((p) => p.projectId === w.projectId)

@@ -12,7 +12,7 @@ Four tiers, top to bottom. Every tier is omitted when empty.
 
 | Tier | Content | Style |
 | --- | --- | --- |
-| Meta | priority (Urgent/High/Low only), type, ticket key, tags (first two, then `+n`) | one wrapping row of small muted text with icons, no pills or chips; Urgent/High keep their colour |
+| Meta | workspace (Worktree/Local, §8), priority (Urgent/High/Low only), type, ticket key, tags (first two, then `+n`) | one wrapping row of small muted text with icons, no pills or chips; Urgent/High keep their colour |
 | Title | task title, up to 3 lines | unchanged |
 | Activity | one line of what the agent did, with its relative time | AI mark when it is the progress summary |
 | Status | what needs the user and what is happening | signals as before |
@@ -28,7 +28,7 @@ Host-scoped (`board-view` settings), so every board on this device uses them.
 | Option | Values | Default |
 | --- | --- | --- |
 | Activity line (`cardActivity`) | `auto`: progress summary, else latest output · `progress` · `output` · `both` · `none` | `auto` |
-| Priority, Type, Ticket, Tags, Session activity, Workpad checks, Ideas | shown / hidden (`cardHidden`: list of hidden field ids) | all shown |
+| Workspace, Priority, Type, Ticket, Tags, Session activity, Workpad checks, Ideas | shown / hidden (`cardHidden`: list of hidden field ids) | all shown |
 
 - Session activity covers running, starting, unread, session count, Loading… and Last known. Approvals and errors are always shown.
 - Always shown, not configurable: Needs you, waiting on cards, approvals, errors, Workspace unavailable, Wrapped up, Archived, Legacy. They tell the user to act or explain why the card behaves differently.
@@ -76,3 +76,25 @@ Acceptance:
 2. No button (and no menu entry) without `navigation.openWorkspace` or when the workspace is unavailable.
 3. Short cards grow to fit the column; titles do not get narrower.
 4. Both strings (`Open workspace`, `Open workspace for {title}`) are in every catalog; `npm test` passes.
+
+## 8. Workspace kind
+
+Status: implemented 2026-10-29. Card: badge for worktree vs local.
+
+A card's meta row says where it works, so worktree cards and cards that share the project folder can be told apart on the board.
+
+- **What**: `GitBranch` + *Worktree* when Paseo's `workspaceKind` is `worktree`; `Folder` + *Local* for every other kind (`local_checkout`, `checkout`, `directory`). Same quiet muted text with icon as the other meta items (§2), no pill. First in the row, before priority, type, ticket and tags, so it sits at the same place on every card (user request 2026-10-29).
+- **Source**: Paseo's live workspace list. `resources.list` (and `resources.read-changed`) carries each workspace's `kind` (optional, Paseo's raw value); the board maps it per card with `cardWorkspace(kind)` in `shared/card-display.ts`. No new request or poll; a card linked to an existing workspace shows that workspace's real kind. Nothing is stored on the task.
+- **No kind, no badge**: a workspace that is not in the live list (missing, archived, wrapped up) shows nothing here; *Workspace unavailable* / *Wrapped up* still explain it.
+- **Option**: field id `workspace` (*Workspace*, first in Settings → Cards → Details), shown by default. The preview card shows *Worktree*.
+- **Accessibility**: the card's label always includes `Workspace: Worktree` / `Workspace: Local` when the kind is known, whatever is hidden.
+- **Card sidebar**: the same badge, first in the header row with status, priority and type ([DRAWER-SPEC, Workspace kind](DRAWER-SPEC.md#workspace-kind); user request 2026-10-29). The *Workspace* switch here does not hide it there.
+- Not shown on the tour's demo cards or in the Attention list. No onboarding tip or tour copy: the badge explains itself. No telemetry field.
+
+Acceptance:
+
+1. A worktree card shows *Worktree* with a branch icon; a card in the project folder or another local checkout shows *Local* with a folder icon. It is the first item of the meta row.
+2. A card whose workspace is not in Paseo's live list shows neither.
+3. Hiding *Workspace* in Settings → Cards removes it from the board and the preview; the accessibility label keeps it.
+4. `cardWorkspace` maps only `worktree` to Worktree, every other kind to Local and a missing kind to nothing (`shared/card-display.test.ts`).
+5. New strings in every catalog; `npm run typecheck` and `npm test` pass.

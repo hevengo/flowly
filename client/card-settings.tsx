@@ -32,6 +32,7 @@ const activityText: Record<CardActivity, { label: string; detail: string }> = {
 };
 
 const fieldText: Record<CardField, { title: string; detail: string }> = {
+  workspace: { title: msg("Workspace"), detail: msg("Whether the card works in its own worktree or locally.") },
   priority: { title: msg("Priority"), detail: msg("Urgent, High and Low, and the coloured edge of Urgent and High cards.") },
   type: { title: msg("Type"), detail: msg("Feature, Bug fix, Research and the other card types.") },
   external: { title: msg("Ticket or issue"), detail: msg("The key of the ticket, issue or pull request the card works from.") },
@@ -245,6 +246,7 @@ function CardPreview({ display }: { display: ReturnType<typeof cardDisplay> }) {
           selected={false}
           legacy={false}
           available
+          workspace="worktree"
           running={1}
           sessions={2}
           summary={sample.summary}

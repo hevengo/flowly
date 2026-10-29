@@ -421,6 +421,8 @@ export const listResources = defineRpc({
         name: z.string(),
         path: z.string(),
         status: z.string(),
+        /** Paseo's workspaceKind: directory, local_checkout, checkout or worktree (CARD-DISPLAY-SPEC §8). */
+        kind: z.string().optional(),
         repoPaths: z.array(z.string()),
         owner: z.string(),
       }),

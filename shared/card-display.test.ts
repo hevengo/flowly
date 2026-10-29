@@ -1,8 +1,9 @@
 import { expect, test } from "vitest";
-import { activityLines, cardDisplay, withCardField } from "./card-display";
+import { activityLines, cardDisplay, cardWorkspace, withCardField } from "./card-display";
 
 test("everything shows by default; hidden ids hide their field and unknown ids are ignored", () => {
-  expect(cardDisplay(null)).toMatchObject({ activity: "auto", priority: true, type: true, external: true, tags: true, sessions: true, workpad: true, ideas: true });
+  expect(cardDisplay(null)).toMatchObject({ activity: "auto", priority: true, type: true, external: true, workspace: true, tags: true, sessions: true, workpad: true, ideas: true });
+  expect(cardDisplay({ cardHidden: ["workspace"] }).workspace).toBe(false);
   expect(cardDisplay({ cardHidden: ["tags", "ideas", "later"], cardActivity: "none" })).toMatchObject({ activity: "none", tags: false, ideas: false, type: true });
   expect(cardDisplay({ cardActivity: "bogus" }).activity).toBe("auto");
 });
@@ -25,4 +26,11 @@ test("auto shows the progress summary and falls back to the latest output", () =
   expect(activityLines("progress", false, true)).toEqual({ progress: false, output: false });
   expect(activityLines("output", true, true)).toEqual({ progress: false, output: true });
   expect(activityLines("none", true, true)).toEqual({ progress: false, output: false });
+});
+
+test("only a Paseo worktree reads as Worktree; every other kind is Local; no kind shows nothing (§8)", () => {
+  expect(cardWorkspace("worktree")).toBe("worktree");
+  for (const kind of ["local_checkout", "checkout", "directory"]) expect(cardWorkspace(kind)).toBe("local");
+  expect(cardWorkspace(undefined)).toBeNull();
+  expect(cardWorkspace("")).toBeNull();
 });

@@ -3,7 +3,7 @@ import { Animated, PanResponder, Pressable, View } from "react-native";
 import { Icon } from "@getpaseo/plugin/client/react-native";
 import { taskTypeLabels, type Task } from "../shared/model";
 import { AiMark, Badge, Dot, IconButton, Label, font, radius, relativeTime, space, tint, touch, useTheme, noFocusRing } from "./ui";
-import { PriorityIcon, TypeIcon, priorityAccent, priorityLabels } from "./status";
+import { PriorityIcon, TypeIcon, WorkspaceIcon, priorityAccent, priorityLabels, workspaceLabel, workspaceLabels } from "./status";
 import type { Point } from "./geometry";
 import type { SessionAttentionSummary } from "../shared/session-attention";
 import { PulseDot, motionDuration, useMotionValue } from "./motion";
@@ -13,7 +13,7 @@ import { menuHandlers, useMenuOpener, type MenuEntry } from "./context-menu";
 import { shallowEqual } from "./stable";
 import { t, tn } from "../shared/i18n";
 import type { WorkpadSignal } from "../shared/workpad";
-import { activityLines, defaultCardDisplay, type CardDisplay } from "../shared/card-display";
+import { activityLines, defaultCardDisplay, type CardDisplay, type CardWorkspace } from "../shared/card-display";
 import { BrandIcon } from "./brand-icons";
 import type { ConnectorFamily } from "../shared/connectors";
 
@@ -90,6 +90,7 @@ export function TaskCard({
   selected,
   legacy,
   available,
+  workspace = null,
   wrapped = false,
   running,
   sessions,
@@ -119,6 +120,8 @@ export function TaskCard({
   selected: boolean;
   legacy: boolean;
   available: boolean;
+  /** Worktree or local, while the workspace is live (CARD-DISPLAY-SPEC §8). */
+  workspace?: CardWorkspace | null;
   /** Done/Cancelled and wrapped up: its workspace is archived on purpose, not missing. */
   wrapped?: boolean;
   running: number;
@@ -285,7 +288,7 @@ export function TaskCard({
           progress ? t("Progress: {state}", { state: progress.state }) : "",
           workpad ? workpadText(workpad) : "",
           attentionDismissed ? t("Dismissed from Attention") : "",
-          [t("{priority} priority", { priority: priorityLabels[task.priority] }), task.type ? taskTypeLabels[task.type] : "", task.archivedAt ? t("archived") : "", legacy ? t("legacy scope") : ""].filter(Boolean).join(", "),
+          [t("{priority} priority", { priority: priorityLabels[task.priority] }), task.type ? taskTypeLabels[task.type] : "", workspace ? workspaceLabel(workspace) : "", task.archivedAt ? t("archived") : "", legacy ? t("legacy scope") : ""].filter(Boolean).join(", "),
           summaryState === "ready" && summary
             ? t("{running} running, {finished} finished turns, {unread} unread sessions, {attention} need attention", { running: summary.running, finished: summary.finished, unread: summary.unread, attention: summary.attention })
             : "",
@@ -317,7 +320,7 @@ export function TaskCard({
           outlineStyle: "none",
         }) as never}
       >
-        <CardMeta task={task} externalKey={externalKey} externalFamily={externalFamily} display={display} />
+        <CardMeta task={task} externalKey={externalKey} externalFamily={externalFamily} workspace={workspace} display={display} />
         <Label medium size={font.base} lines={3} selectable={false}>
           {task.title}
         </Label>
@@ -549,19 +552,21 @@ function CardSignals({
 }
 
 /**
- * What the card is: priority, type, ticket and tags as one quiet row above the
+ * What the card is: workspace, priority, type, ticket and tags as one quiet row above the
  * title (CARD-DISPLAY-SPEC §2). Plain text with icons; only Urgent/High keep colour.
  */
-function CardMeta({ task, externalKey, externalFamily, display }: { task: Task; externalKey: string; externalFamily?: ConnectorFamily; display: CardDisplay }) {
+function CardMeta({ task, externalKey, externalFamily, workspace, display }: { task: Task; externalKey: string; externalFamily?: ConnectorFamily; workspace: CardWorkspace | null; display: CardDisplay }) {
   const { colors } = useTheme();
   const priority = display.priority && task.priority !== "normal";
   const accent = priorityAccent(colors, task.priority);
   const type = display.type && !!task.type;
   const ticket = display.external && !!externalKey;
+  const place = display.workspace ? workspace : null;
   const tags = display.tags ? task.tags || [] : [];
-  if (!priority && !type && !ticket && !tags.length) return null;
+  if (!priority && !type && !ticket && !place && !tags.length) return null;
   return (
     <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space[2]+2, rowGap: 2, minWidth: 0 }}>
+      {place && <Meta label={workspaceLabel(place)} icon={<WorkspaceIcon workspace={place} size={12} />} text={workspaceLabels[place]} />}
       {priority && (
         <Meta label={t("{priority} priority", { priority: priorityLabels[task.priority] })} icon={<PriorityIcon priority={task.priority} size={12} />} text={priorityLabels[task.priority]} color={accent} />
       )}

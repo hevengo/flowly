@@ -34,7 +34,8 @@ import {
   message,
   verticalScroll,
   verticalContent, noFocusRing } from "./ui";
-import { PriorityIcon, StatusIcon, TypeIcon, priorityLabels } from "./status";
+import { PriorityIcon, StatusIcon, TypeIcon, WorkspaceIcon, priorityLabels, workspaceLabel, workspaceLabels } from "./status";
+import { cardWorkspace } from "../shared/card-display";
 import { useLiveAgents } from "./queries";
 import { shallowEqual, useStableCallback } from "./stable";
 import { isLegacyScope } from "../shared/scope";
@@ -370,6 +371,8 @@ function TaskDrawerView({
     isPending: sessionsData === undefined && (liveAgents.isPending || workspaceSessions.isPending),
     refetch: () => Promise.all([liveAgents.refetch(), workspaceSessions.refetch()]),
   };
+  // Worktree or local, from the workspace read above (CARD-DISPLAY-SPEC §8, DRAWER-SPEC Workspace kind).
+  const place = cardWorkspace(workspace.data?.workspaceKind);
   const unavailable =
     !workspace.data ||
     workspace.isError ||
@@ -699,6 +702,18 @@ function TaskDrawerView({
     <>
       <Label bold size={font.xl} lines={3}>{task.title}</Label>
       <View testID="task-actions" style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space[2] }}>
+        {place && (
+          // Read-only, so no chip border: the properties beside it are pickers.
+          <View
+            accessibilityLabel={workspaceLabel(place)}
+            style={{ flexDirection: "row", alignItems: "center", gap: space[1.5], height: touch ? 40 : 28, paddingRight: space[1] }}
+          >
+            <WorkspaceIcon workspace={place} />
+            <Label muted size={font.md} selectable={false}>
+              {workspaceLabels[place]}
+            </Label>
+          </View>
+        )}
         <Property
           icon={<StatusIcon status={task.status} />}
           text={laneName(project, task.status)}

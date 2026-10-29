@@ -1,7 +1,7 @@
 /** What a board card shows (CARD-DISPLAY-SPEC). Pure; the values live in the host-scoped board-view settings. */
 
 /** Fields the user can hide. Signals that ask the user to act are not in this list: they always show. */
-export const cardFields = ["priority", "type", "external", "tags", "sessions", "workpad", "ideas"] as const;
+export const cardFields = ["workspace", "priority", "type", "external", "tags", "sessions", "workpad", "ideas"] as const;
 export type CardField = (typeof cardFields)[number];
 
 /** The activity line: `auto` shows the progress summary, else the latest output. */
@@ -12,6 +12,7 @@ export type CardDisplay = { activity: CardActivity } & Record<CardField, boolean
 
 export const defaultCardDisplay: CardDisplay = {
   activity: "auto",
+  workspace: true,
   priority: true,
   type: true,
   external: true,
@@ -35,6 +36,15 @@ export function cardDisplay(view: { cardActivity?: string; cardHidden?: readonly
 export function withCardField(hidden: readonly string[], field: CardField, shown: boolean): string[] {
   const rest = hidden.filter((id) => id !== field && !(field === "external" && id === "ticket"));
   return shown ? rest : [...rest, field];
+}
+
+/** Where a card works (CARD-DISPLAY-SPEC §8): its own Git worktree, or locally in a folder or checkout. */
+export type CardWorkspace = "worktree" | "local";
+
+/** Paseo's `workspaceKind` (directory, local_checkout, checkout, worktree) as the card shows it; unknown without a live workspace. */
+export function cardWorkspace(kind: string | undefined): CardWorkspace | null {
+  if (!kind) return null;
+  return kind === "worktree" ? "worktree" : "local";
 }
 
 /** Which of the progress and output lines a card shows. */

@@ -1,7 +1,8 @@
-import { localizedLabels, msg } from "../shared/i18n";
+import { localizedLabels, msg, t } from "../shared/i18n";
 import type { PluginTheme } from "@getpaseo/plugin";
 import { Icon } from "@getpaseo/plugin/client/react-native";
 import { legacyStatus, type HistoryStatus, type Status, type Task, type TaskType } from "../shared/model";
+import type { CardWorkspace } from "../shared/card-display";
 import { tint, useTheme } from "./ui";
 
 type Colors = PluginTheme["colors"];
@@ -68,6 +69,22 @@ export function TypeIcon({ type, size = 14, always = false }: { type?: TaskType;
   const { colors } = useTheme();
   if (!type && !always) return null;
   return <Icon name={type ? typeIcons[type] : "Tag"} size={size} color={colors.foregroundMuted} />;
+}
+
+/** Where a card works (CARD-DISPLAY-SPEC §8). */
+export const workspaceLabels: Record<CardWorkspace, string> = localizedLabels({
+  worktree: msg("Worktree"),
+  local: msg("Local"),
+});
+
+/** Accessibility text that names the workspace kind. */
+export function workspaceLabel(workspace: CardWorkspace) {
+  return t("Workspace: {kind}", { kind: workspaceLabels[workspace] });
+}
+
+export function WorkspaceIcon({ workspace, size = 14 }: { workspace: CardWorkspace; size?: number }) {
+  const { colors } = useTheme();
+  return <Icon name={workspace === "worktree" ? "GitBranch" : "Folder"} size={size} color={colors.foregroundMuted} />;
 }
 
 /** Session visual tone derived from the shared sessionState label set. */

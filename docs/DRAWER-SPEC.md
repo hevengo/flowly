@@ -8,6 +8,8 @@ Status: authorized by the user's 2026-10-14 sidebar redesign request. This repla
 
 2026-10-29 Open workspace in the header (user request, card "button to open associated workspace"): replaces §4's "No Open workspace action". See [Open workspace](#open-workspace).
 
+2026-10-29 Worktree / Local in the header row (user request, card "badge for worktree vs local"). See [Workspace kind](#workspace-kind).
+
 2026-10-19 sidebar tweaks (card "UI/UX 调整"): see [Section order and Artifacts paging](#section-order-and-artifacts-paging) below. Progress → History rows now start at the section's left edge (the `Disclosure` `flush` option) and an opened version's fields line up with its title.
 
 2026-10-24 open card's lane beside the sidebar (user request, card "UI/UX常规修修补补"): on desktop, opening a card narrows the board, which could leave the card's lane under or past the sidebar's edge. When a card is opened (from the board, a link, Ideas, Memory or Insights), moves to another lane, or the board comes back from a page with a card open, the board scrolls (animated, after the sidebar has narrowed it) so that lane is centred in the board's visible part; a lane already fully visible stays put. The overview bar's In review / Blocked chips keep scrolling their lane to the left edge, and a chip pressed while a page closes keeps its lane. A request is not replayed when the board mounts again more than a second later. Phones are unchanged (the card covers the board). Then the card is scrolled (animated) into its lane's list with `cardRevealOffset`, unless already fully visible; the overview chips do not. Code: `laneRevealOffset` in `client/geometry.ts`, the `reveal` prop of `DesktopColumns`.
@@ -88,3 +90,13 @@ Status: implemented 2026-10-29. Card: button to open associated workspace. The u
 3. It is there only when the host offers `navigation.openWorkspace`. It is disabled, not hidden, while the sidebar is inactive or the workspace is unavailable or still being checked (the sidebar's own *unavailable* state, the one that disables Start session), so the header icons do not shift when the check finishes.
 4. The session view (a selected session) keeps its own header; its *Open in Paseo* still opens the session.
 5. No new strings (*Open workspace* already exists), no onboarding tip, no telemetry field.
+
+## Workspace kind
+
+Status: implemented 2026-10-29. Card: badge for worktree vs local. The board card's badge ([CARD-DISPLAY-SPEC §8](CARD-DISPLAY-SPEC.md#8-workspace-kind)) also shows in the sidebar, at the user's request.
+
+1. The header row with Status, Priority and Type starts with `GitBranch` + *Worktree* or `Folder` + *Local*, the same words, icons and mapping as on the card (`cardWorkspace`, `WorkspaceIcon`, `workspaceLabels` in `client/status.tsx`).
+2. It is read-only: muted icon and text at the property buttons' height, no border or press state, so it does not read as a picker. Its accessibility label is *Workspace: Worktree* / *Workspace: Local*.
+3. The kind comes from the sidebar's own workspace read (`workspaces.ref(id).refresh()`, every 10 s); no new request. While that read is pending, or when the workspace is gone, the row starts with Status as before.
+4. Always shown when known: Settings → Cards → *Workspace* only affects board cards. Desktop and compact alike (the row wraps). No new strings.
+

@@ -1,5 +1,11 @@
 # Implementation progress
 
+## Worktree / Local on the card (card "badge for worktree vs local") — 2026-10-29
+
+- Board cards show where they work, first in the meta row: *Worktree* (`GitBranch`) for a Paseo worktree workspace, *Local* (`Folder`) for every other kind. `resources.list` now carries Paseo's `workspaceKind` as `kind`; the board maps it with `cardWorkspace` (`shared/card-display.ts`), no new request. No badge when the workspace is not live. New hideable field *Workspace* in Settings → Cards (default on); the accessibility label always names it. [CARD-DISPLAY-SPEC §8](CARD-DISPLAY-SPEC.md#8-workspace-kind)
+- The card sidebar shows the same badge first in its Status / Priority / Type row, read-only, from its own workspace read; not affected by the Cards switch. Label and icon shared in `client/status.tsx` (`workspaceLabels`, `WorkspaceIcon`, `workspaceLabel`). [DRAWER-SPEC, Workspace kind](DRAWER-SPEC.md#workspace-kind)
+- Four new strings in all catalogs. Onboarding: no tip or tour copy, the badge explains itself. Telemetry: no heartbeat field.
+
 ## Agent speed (card "speed settings for agents") — 2026-10-29
 
 - The agent picker (New session, New task → Start an agent now) has a **Speed** row when the chosen model offers one: Paseo's provider features `service_tier` (Codex select) and `fast_mode` (Claude toggle, Opus), read with `providers.listFeatures` and sent as `featureValues` at creation; normal speed sends nothing. The latest session's speed is the starting point for the same provider. [AGENT-SPEED-SPEC](AGENT-SPEED-SPEC.md)
