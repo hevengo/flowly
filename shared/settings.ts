@@ -44,8 +44,8 @@ export const boardViewSettings = defineSettings({
     drawerOrder: z.array(z.string().max(40)).max(20).catch([]).default([]),
     /** Card sidebar sections that start open (true) or closed (false) unlike their default (DRAWER-SPEC, Section order). */
     drawerOpen: z.record(z.string().max(40), z.boolean()).catch({}).default({}),
-    /** Card sidebar width in points as last dragged; 0 = never resized (UI-UX-SPEC, drawer width). */
-    drawerWidth: z.number().int().min(0).max(2000).catch(0).default(0),
+    /** Card sidebar width as last dragged, as a share of the Flowly area; 0 = never dragged, opens at half (UI-UX-SPEC, drawer width). */
+    drawerShare: z.number().min(0).max(1).catch(0).default(0),
   }),
 });
 

@@ -57,7 +57,7 @@ vi.mock("../../../../client/columns", async () => {
   return { DesktopColumns: (props: any) => React.createElement("DesktopColumns", props, ...props.tasks.map((task: any) => props.renderCard(task))) };
 });
 vi.mock("../../../../client/resize", () => ({ ResizeGrip: () => null }));
-vi.mock("../../../../client/geometry", () => ({ drawerWidth: () => 440, isCompactLayout: () => false }));
+vi.mock("../../../../client/geometry", () => ({ defaultDrawerShare: 0.5, drawerShare: (width: number, surface: number) => width / surface, drawerWidth: () => 440, isCompactLayout: () => false }));
 vi.mock("../../../../client/ui", async () => {
   const React = await import("react");
   const primitive = (type: string) => ({ children, ...props }: any) => React.createElement(type, props, children);

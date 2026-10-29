@@ -78,9 +78,17 @@ export function cardRevealOffset(
   return next === offset ? null : next;
 }
 
+/** At least 340 points; no fixed maximum, only the window's: 300 points of board plus the grip stay. */
 export function drawerWidth(preferred: number, surfaceWidth: number): number {
-  const max = Math.min(720, Math.max(340, surfaceWidth - 312));
-  return Math.max(340, Math.min(max, preferred));
+  return Math.max(340, Math.min(surfaceWidth - 312, preferred));
+}
+
+/** The drawer's share of the Flowly area until it is dragged (UI-UX-SPEC §4). */
+export const defaultDrawerShare = 0.5;
+
+/** The share of the Flowly area a dragged drawer keeps, clamped like drawerWidth. */
+export function drawerShare(width: number, surfaceWidth: number): number {
+  return drawerWidth(width, surfaceWidth) / surfaceWidth;
 }
 
 export function isCompactLayout(width: number): boolean {

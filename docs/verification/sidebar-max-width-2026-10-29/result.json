@@ -1,0 +1,76 @@
+{
+  "project": "paseo-flowly-hevengo",
+  "card": "unlock the sidebar max width",
+  "windows": {
+    "wide": 2400,
+    "narrow": 1600,
+    "h": 1000
+  },
+  "storedBefore": {
+    "drawerShare": null,
+    "drawerWidth": null
+  },
+  "opened": {
+    "x": 1352,
+    "y": 119,
+    "width": 8,
+    "height": 881,
+    "drawer": 1040,
+    "surface": 2080,
+    "valueNow": null,
+    "valueMax": null
+  },
+  "dragged": {
+    "x": 1052,
+    "y": 119,
+    "width": 8,
+    "height": 881,
+    "drawer": 1340,
+    "surface": 2080,
+    "valueNow": null,
+    "valueMax": null
+  },
+  "storedAfterDrag": 0.6442,
+  "reopened": {
+    "x": 1052.078125,
+    "y": 119,
+    "width": 8,
+    "height": 881,
+    "drawer": 1340,
+    "surface": 2080,
+    "valueNow": null,
+    "valueMax": null
+  },
+  "narrower": {
+    "x": 767.4375,
+    "y": 119,
+    "width": 8,
+    "height": 881,
+    "drawer": 825,
+    "surface": 1280,
+    "valueNow": null,
+    "valueMax": null
+  },
+  "afterRestore": {
+    "x": 1352,
+    "y": 119,
+    "width": 8,
+    "height": 881,
+    "drawer": 1040,
+    "surface": 2080,
+    "valueNow": null,
+    "valueMax": null
+  },
+  "pageErrors": [],
+  "checks": {
+    "opensAtHalf": true,
+    "draggedPast720": true,
+    "draggedByFullAmount": true,
+    "savedAsShare": true,
+    "restoredOnReopen": true,
+    "narrowerKeepsShare": true,
+    "settingsPutBack": true,
+    "noPageErrors": true
+  },
+  "pass": true
+}

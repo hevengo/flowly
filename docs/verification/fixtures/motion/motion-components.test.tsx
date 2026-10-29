@@ -74,7 +74,7 @@ vi.mock("../../../../client/columns", async () => {
       React.createElement("Drop", { onPress: () => props.onDrop({ id: "task-1", revision: 4, status: "development" }) }, "drop"));
   } };
 });
-vi.mock("../../../../client/geometry", () => ({ drawerWidth: (preferred: number) => preferred, isCompactLayout: () => false }));
+vi.mock("../../../../client/geometry", () => ({ defaultDrawerShare: 0.5, drawerShare: (width: number, surface: number) => width / surface, drawerWidth: (preferred: number) => preferred, isCompactLayout: () => false }));
 vi.mock("../../../../client/session-link", () => ({ parseSessionLink: () => null, resolveSessionLink: vi.fn(), sessionLinkKey: vi.fn(), }));
 
 const rendererPath = process.env.MOTION_TEST_RENDERER;

@@ -6,7 +6,7 @@ import { t } from "../shared/i18n";
 export function ResizeGrip({
   width,
   onChange,
-  maxWidth = 720,
+  maxWidth,
   onStart,
   onEnd,
 }: {

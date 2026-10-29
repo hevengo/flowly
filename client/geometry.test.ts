@@ -4,6 +4,8 @@ import {
   listDropIndex,
   listShift,
   contentY,
+  defaultDrawerShare,
+  drawerShare,
   drawerWidth,
   dropSlot,
   placementUpdate,
@@ -70,9 +72,25 @@ describe("board interaction geometry", () => {
   });
   test("drawer resize keeps a readable drawer and at least 300 points of board", () => {
     expect(drawerWidth(100, 1200)).toBe(340);
-    expect(drawerWidth(1000, 1600)).toBe(720);
     expect(drawerWidth(720, 800)).toBe(488);
     expect(drawerWidth(440, 760)).toBe(440);
+    // No fixed maximum: only the window bounds it.
+    expect(drawerWidth(1000, 1600)).toBe(1000);
+    expect(drawerWidth(2400, 1600)).toBe(1288);
+    expect(drawerWidth(Infinity, 1600)).toBe(1288);
+    expect(drawerWidth(3000, 5120)).toBe(3000);
+  });
+  test("the drawer opens at half the Flowly area and keeps a dragged width as a share of it", () => {
+    expect(drawerWidth(defaultDrawerShare * 2080, 2080)).toBe(1040);
+    expect(drawerWidth(defaultDrawerShare * 900, 900)).toBe(450);
+    // Narrow surfaces still keep the minimum.
+    expect(drawerWidth(defaultDrawerShare * 600, 600)).toBe(340);
+    expect(drawerShare(1000, 2000)).toBe(0.5);
+    // Clamped before it becomes a share: the minimum and the board's 300 points plus grip.
+    expect(drawerShare(100, 2000)).toBe(0.17);
+    expect(drawerShare(5000, 2000)).toBe(0.844);
+    // The same share on a narrower window gives a proportionally narrower drawer.
+    expect(drawerWidth(drawerShare(1500, 2000) * 1600, 1600)).toBe(1200);
   });
   test("only available width selects compact layout; unmeasured surfaces start compact", () => {
     expect(isCompactLayout(0)).toBe(true);

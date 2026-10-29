@@ -22,6 +22,13 @@
 - The card sidebar's header gets the same button left of the pencil (Edit), at the user's request, disabled while the workspace is checked or unavailable. This replaces the 2026-10-14 "No Open workspace action" ([DRAWER-SPEC](DRAWER-SPEC.md#open-workspace)).
 - Two new strings (*Open workspace*, *Open workspace for {title}*) in all catalogs. Onboarding: no tour copy or tip; the button is on the card itself. Telemetry: no heartbeat field.
 
+## Card sidebar without a fixed maximum width (card "unlock the sidebar max width") — 2026-10-29
+
+- The desktop card sidebar no longer stops at 720 points: `drawerWidth` keeps the 340-point minimum and the 300 points of board plus grip, nothing else. The grip's accessibility maximum follows the window. [UI-UX-SPEC §4](UI-UX-SPEC.md)
+- The width is a share of the Flowly area (user decision 2026-10-29): a sidebar never dragged opens at 50% (was 440 points), and a dragged width is saved as `board-view` `drawerShare`, so it scales between screens. The point value `drawerWidth` is gone; a sidebar dragged before opens at 50% once.
+- No new strings. Onboarding: no tour copy or tip; dragging wider is self-explanatory. Telemetry: no heartbeat field.
+- Checked in the app ([evidence](verification/sidebar-max-width-2026-10-29/report.md)).
+
 ## Telemetry hard-off (card "hard disable telementry") — 2026-10-29
 
 - `POSTHOG_KEY` is empty, so the heartbeat and `$exception` reports send nothing and no `telemetry.json` is created, whatever the setting or environment says. `TelemetryService.builtOff()` reports it, and `telemetry.status` now returns `builtOff`. Settings → General and the tour's last page show *Send anonymous usage data* off and locked with *Turned off in this build.* (new string in all catalogs). [TELEMETRY-SPEC §5, §6](TELEMETRY-SPEC.md)

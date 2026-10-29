@@ -89,7 +89,7 @@ import { ContextMenuProvider, eventPoint, menuHandlers, suppressNativeMenu, useM
 import { DesktopColumns, OlderToggle, type Placement } from "./columns";
 import { olderFinishedFromDates } from "./finished-cards";
 import { ResizeGrip } from "./resize";
-import { drawerWidth, isCompactLayout } from "./geometry";
+import { defaultDrawerShare, drawerShare, drawerWidth, isCompactLayout } from "./geometry";
 import { useSessionReads } from "./session-reads";
 import { sessionAttentionSummaryFromTurns } from "../shared/session-attention";
 import { MotionProvider, MotionReveal, useMotionPresence, lerp } from "./motion";
@@ -349,7 +349,7 @@ function BoardContent(
     ),
     [error, setError] = useState(""),
     [pending, setPending] = useState(false),
-    [preferredWidth, setPreferredWidth] = useState(440);
+    [preferredShare, setPreferredShare] = useState(defaultDrawerShare);
   // Manual navigation supersedes the current link; its late success/error may only cache data.
   const setTask = (id: string) => { ignoredLink.current = linkKey; setTaskState(id); };
   const setTaskForm = useStableCallback((next: typeof taskForm) => {
@@ -367,7 +367,7 @@ function BoardContent(
     setTaskTypeState(view.values.filterType);
     setTagFilterState(view.values.filterTags);
     setArchivedState(view.values.showArchived);
-    if (view.values.drawerWidth) setPreferredWidth(view.values.drawerWidth);
+    if (view.values.drawerShare) setPreferredShare(view.values.drawerShare);
   }, [!!view.values]);
   const searchSave = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
@@ -474,7 +474,7 @@ function BoardContent(
   const { query: readState, receipts } = useSessionReads(auxiliaryActive);
   const resources = useResourcesQuery({ refetchInterval: 15000, enabled: auxiliaryActive });
   const agents = useLiveAgents({ enabled: auxiliaryActive });
-  const width = drawerWidth(preferredWidth, surfaceWidth || 1000);
+  const width = drawerWidth(preferredShare * (surfaceWidth || 1000), surfaceWidth || 1000);
   // While the drawer is being dragged the board keeps one width, the widest it can have (the
   // drawer overlays it), so columns neither reflow nor leave a blank gap when the drawer narrows.
   const [resizing, setResizing] = useState(false);
@@ -1582,15 +1582,16 @@ function BoardContent(
       {!compact && (
         <ResizeGrip
           width={width}
-          maxWidth={drawerWidth(720, surfaceWidth || 1000)}
+          maxWidth={drawerWidth(Infinity, surfaceWidth || 1000)}
           onStart={() => setResizing(true)}
           onEnd={() => {
             setResizing(false);
             // Saved once, on release, never per frame.
-            if (preferredWidth !== view.values?.drawerWidth) void view.update({ drawerWidth: Math.round(preferredWidth) });
+            const share = Math.round(preferredShare * 10000) / 10000;
+            if (share !== view.values?.drawerShare) void view.update({ drawerShare: share });
           }}
           onChange={(next) =>
-            setPreferredWidth(drawerWidth(next, surfaceWidth))
+            setPreferredShare(drawerShare(next, surfaceWidth || 1000))
           }
         />
       )}
