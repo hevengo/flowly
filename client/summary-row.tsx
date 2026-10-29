@@ -13,13 +13,16 @@ import { t } from "../shared/i18n";
 /**
  * A summary version as a timeline row (NATIVE-SESSION-SPEC §5.3): the drawer's
  * Progress card under a "Progress" heading, in Paseo's own timeline only
- * (Flowly's session view leaves it out; the sidebar has Progress).
+ * (Flowly's session view leaves it out; the sidebar has Progress). It starts
+ * open (2026-10-29 user feedback: collapsed, nearly every row was cut off);
+ * Show less still collapses it.
  */
 export const SummaryRow = memo(function SummaryRow({ data, onOpenCard }: { data: SummaryRowData; onOpenCard?: () => void }) {
   return (
     <View testID="session-summary-row" style={{ gap: space[1.5] }}>
       <NativeCardHeading title={t("Progress")} />
       <ContentCard
+        defaultOpen
         footer={
           <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
             <CardFootnote>{t("Updated {time}", { time: relativeTime(data.at) })}</CardFootnote>

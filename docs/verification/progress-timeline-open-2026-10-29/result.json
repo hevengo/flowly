@@ -1,0 +1,46 @@
+{
+  "workspaceId": "wks_b559a4acc6f0c3d6",
+  "clamp": 104,
+  "atInsert": [
+    {
+      "maxHeight": "none",
+      "height": 288
+    },
+    {
+      "maxHeight": "none",
+      "height": 288
+    }
+  ],
+  "mounted": [
+    {
+      "found": true,
+      "visible": 288,
+      "natural": 288,
+      "fade": 0,
+      "toggle": "Show less"
+    },
+    {
+      "found": true,
+      "visible": 288,
+      "natural": 288,
+      "fade": 0,
+      "toggle": "Show less"
+    }
+  ],
+  "collapsed": {
+    "found": true,
+    "visible": 104,
+    "natural": 288,
+    "fade": 1,
+    "toggle": "Show more"
+  },
+  "reopened": {
+    "found": true,
+    "visible": 288,
+    "natural": 288,
+    "fade": 0,
+    "toggle": "Show less"
+  },
+  "pageErrors": [],
+  "failures": []
+}

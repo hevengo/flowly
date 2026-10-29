@@ -30,7 +30,7 @@ export function ContentCard({
 }: {
   footer?: ReactNode;
   after?: ReactNode;
-  /** Start expanded (the welcome tour shows every field); Show less still collapses it. */
+  /** Start expanded (the welcome tour shows every field, the timeline Progress row); Show less still collapses it. */
   defaultOpen?: boolean;
   /** Expands whenever this changes to a value (a search hit on the card); Show less still collapses it. */
   openWhen?: unknown;
@@ -159,8 +159,9 @@ function Clamped({
       <Animated.View
         style={{
           overflow: "hidden",
-          // Until measured, cap without animating so long content never flashes open.
-          ...(target === null ? { maxHeight: clampHeight } : { height }),
+          // Until measured, cap a closed card without animating so long content never flashes open;
+          // an open one lays out at its natural height so it never mounts short and then jumps.
+          ...(target !== null ? { height } : open ? null : { maxHeight: clampHeight }),
         }}
       >
         <View onLayout={(e) => setNatural(Math.ceil(e.nativeEvent.layout.height))}>{children}</View>
