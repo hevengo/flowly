@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { PaseoApi } from "@getpaseo/client";
 import type { LocaleCode } from "../shared/i18n";
-import type { Board, Project, Task } from "../shared/model";
+import { isDeliveryStatus, type Board, type Project, type Task } from "../shared/model";
 import { SUMMARIZER_LABELS, summaryModelsOf, type SummarySettings } from "../shared/summary";
 import {
   RETRO_DELAY_MS,
@@ -570,7 +570,7 @@ export class MemoryService {
     const question = lastReport?.reportKind === "question" ? lastReport : undefined;
     const lastStatus = [...before].reverse().find((e) => e.action === "status_changed" && e.to);
     return {
-      kind: question ? "answer" : lastStatus?.to === "in_review" ? "feedback" : "message",
+      kind: question ? "answer" : isDeliveryStatus(lastStatus?.to) ? "feedback" : "message",
       ...(question?.note ? { ask: question.note.slice(0, memoryLimits.clueText) } : {}),
       text: value,
     };

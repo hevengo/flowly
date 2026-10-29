@@ -36,7 +36,7 @@ paseo plugin add jasprw/flowly
 
 ### 1. 自动状态流转
 
-从卡片启动 session 后，卡片会跟着工作走：**Design → Development → Test → In review**。agent 通过受限的 Kanban 工具设置自己所处的阶段；session 开始或恢复一轮时，daemon 也会移动卡片。回合结束**不会**把卡片设为 Done，Done 和 Cancelled 永远由你决定。卡片上显示运行中、已结束回合、未读、需关注的 session 数量，以及最近一条 agent 输出。
+从卡片启动 session 后，卡片会跟着工作走：**Design → Development → Test → In review → Committed**。agent 通过受限的 Kanban 工具设置自己所处的阶段，按你的要求提交卡片的改动后把卡片移到 Committed；session 开始或恢复一轮时，daemon 也会移动卡片。回合结束**不会**把卡片设为 Done，Done 和 Cancelled 永远由你决定。卡片上显示运行中、已结束回合、未读、需关注的 session 数量，以及最近一条 agent 输出。
 
 可在 *Settings → Workflow → Moving cards* 全局关闭，也可以按项目关闭。
 

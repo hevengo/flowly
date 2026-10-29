@@ -1,6 +1,6 @@
 import { enabledStatuses, laneEnabled } from "../shared/lanes";
 import type { PluginTurnOutcome } from "@getpaseo/plugin/server";
-import { isWorkStatus, legacyStatus, workStatuses, type Board, type BoardEvent, type Status, type Task } from "../shared/model";
+import { isDeliveryStatus, isWorkStatus, legacyStatus, workStatuses, type Board, type BoardEvent, type Status, type Task } from "../shared/model";
 import type { ToolIdentity } from "../shared/tools";
 import { nextMovesAction } from "../shared/next-moves";
 
@@ -40,19 +40,19 @@ export function recordLifecycle(
   });
 }
 
-/** Statuses a new turn resumes from: continuing after review/blocker. */
-const restartable: readonly Status[] = ["in_review", "blocked"];
+/** Statuses a new turn resumes from: continuing after review, commit (COMMITTED-STAGE-SPEC §4) or a blocker. */
+const restartable: readonly Status[] = ["in_review", "committed", "blocked"];
 
 /**
  * The work stage a resumed card goes to. Feedback after review is rework, so a card
- * in review resumes in Development. A blocked card returns to the latest stage it was
+ * in review (or committed) resumes in Development. A blocked card returns to the latest stage it was
  * in (the retired In progress counts as Development). Disabled lanes fall back to
  * the first enabled stage; null when the workflow has no enabled work stage. The
  * agent corrects the stage when the turn's work belongs elsewhere.
  */
 export function resumeStage(board: Board, task: Task, project: Parameters<typeof laneEnabled>[0]): Status | null {
-  if (task.status === "in_review" && laneEnabled(project, "development")) return "development";
-  if (task.status !== "in_review") for (let i = board.events.length - 1; i >= 0; i--) {
+  if (isDeliveryStatus(task.status) && laneEnabled(project, "development")) return "development";
+  if (!isDeliveryStatus(task.status)) for (let i = board.events.length - 1; i >= 0; i--) {
     const e = board.events[i];
     if (e.taskId !== task.id || e.action !== "status_changed" || !e.to) continue;
     const stage = e.to === legacyStatus ? "development" : e.to;
@@ -62,7 +62,7 @@ export function resumeStage(board: Board, task: Task, project: Parameters<typeof
 }
 
 /**
- * Rule A1: a Kanban-managed session starting a turn on a card in review or blocked
+ * Rule A1: a Kanban-managed session starting a turn on a card in review, committed or blocked
  * means work resumes (see resumeStage). Starting from Backlog/Todo leaves
  * the card alone: the agent decides whether to begin with Design or Development
  * (WORKFLOW-STAGES-SPEC). Never touches finished/archived cards or projects that
@@ -106,7 +106,7 @@ export function applyTurnStarted(
 }
 
 /**
- * Rule A1r: a turn that A1 resumed from In review/Blocked, which then ends
+ * Rule A1r: a turn that A1 resumed from In review/Committed/Blocked, which then ends
  * without any Kanban report, restores the previous status. A casual message
  * ("thanks") must not leave a reviewed card looking active.
  */
@@ -132,7 +132,7 @@ export function applyTurnEnded(
   if (started < 0) return false;
   const turn = mine.slice(started + 1);
   const resumed = turn.find(
-    (e) => e.rule === "A1" && (e.from === "in_review" || e.from === "blocked"),
+    (e) => e.rule === "A1" && !!e.from && (restartable as readonly string[]).includes(e.from),
   );
   // Suggested next moves are not work (NEXT-MOVES-SPEC §3).
   if (!resumed?.from || turn.some((e) => e.actor === "agent" && e.action !== nextMovesAction)) return false;

@@ -66,7 +66,7 @@ import { BoardStore } from "./store";
 import { BoardService } from "./service";
 import { ToolSecrets, digest } from "./tool-context";
 import { ToolError } from "./tool-error";
-import { ideaLimits, isWorkStatus, legacyStatus, type Board, type Idea, type Receipt, type Status } from "../shared/model";
+import { ideaLimits, isDeliveryStatus, isWorkStatus, legacyStatus, type Board, type Idea, type Receipt, type Status } from "../shared/model";
 import { isLegacyScope } from "../shared/scope";
 import { MemoryError, type MemoryService } from "./memory";
 import type { SearchService } from "./search";
@@ -472,13 +472,13 @@ export class AgentService {
     // Read for the idea tools, and for a delivery whose result may remind of ideas (IDEAS-SPEC §4.1).
     const ideaWrite = action === "idea" || action === "idea_update" || action === "idea_remove";
     const ideasOn =
-      ideaWrite || (action === "status" && (input as StatusInput).status === "in_review") ? await this.ideasOn() : true;
+      ideaWrite || (action === "status" && isDeliveryStatus((input as StatusInput).status)) ? await this.ideasOn() : true;
     const outputDelivery =
-      (action === "status" && (input as StatusInput).status === "in_review") ||
+      (action === "status" && isDeliveryStatus((input as StatusInput).status)) ||
       (action === "progress" && (input as ProgressInput).kind === "result");
     const outputs = action === "status" || action === "progress" ? (input as StatusInput | ProgressInput).outputs : undefined;
     if (outputs !== undefined && !outputDelivery)
-      throw new ToolError("INVALID_INPUT", "outputs is only valid for status=in_review or kind=result.");
+      throw new ToolError("INVALID_INPUT", "outputs is only valid for status=in_review, status=committed or kind=result.");
     const artifactWrite = action === "artifact" || action === "artifact_remove";
     const artifactsOn = artifactWrite || outputDelivery ? await this.artifactsOn() : true;
     const key = `${identity.agentId}:${digest(input.request.id)}`,
@@ -531,7 +531,7 @@ export class AgentService {
         : undefined;
     // Git runs outside the transaction: the workpad's HEAD stamp and commits (WORKPAD-SPEC §4.2, §5.1),
     // and the HEAD the delivery check compares checks against (§5.3).
-    const delivering = action === "status" && (input as StatusInput).status === "in_review";
+    const delivering = action === "status" && isDeliveryStatus((input as StatusInput).status);
     const head: GitHead | null | undefined =
       action === "workpad" || delivering
         ? await readHead(resources.workspace.workspaceDirectory, this.git, new Date(this.clock()).toISOString())
@@ -658,20 +658,20 @@ export class AgentService {
         );
       // Next moves that ride on a status or report (NEXT-MOVES-SPEC §8.2): a Done move is only offered with a delivery.
       const carried = action === "status" || action === "progress" ? (input as StatusInput | ProgressInput).nextMoves : undefined;
-      if (carried?.some((m) => m.moveTo === "done") && next !== "in_review")
+      if (carried?.some((m) => m.moveTo === "done") && !isDeliveryStatus(next))
         throw new ToolError(
           "INVALID_INPUT",
-          "A moveTo=\"done\" move is only offered together with a delivery to In review (status in_review). Leave it out, or deliver first.",
+          "A moveTo=\"done\" move is only offered together with a delivery to In review or Committed (status in_review or committed). Leave it out, or deliver first.",
         );
       // Soft delivery gate (WORKPAD-SPEC §5.3): open items need an explicit acknowledgement.
       // Off for the project (WORKPAD-SPEC §9): no gate, and the stored workpad stays as it is.
       const deliveryPad =
-        next === "in_review" && next !== previous && workpadEnabled(project) ? board.workpads.find((w) => w.taskId === task.id) : undefined;
+        isDeliveryStatus(next) && next !== previous && workpadEnabled(project) ? board.workpads.find((w) => w.taskId === task.id) : undefined;
       if (deliveryPad && head !== undefined) deliveryPad.head = head;
       const delivered = deliveryPad ? openItems(deliveryPad) : undefined;
       // Missing card setup is part of the same soft gate (CARD-SETUP-SPEC §3.4): one refusal lists everything.
       const setupGap: SetupItem[] =
-        next === "in_review" && next !== previous ? setupMissing(task, workpadOf(board.workpads, task.id), workpadEnabled(project)) : [];
+        isDeliveryStatus(next) && next !== previous ? setupMissing(task, workpadOf(board.workpads, task.id), workpadEnabled(project)) : [];
       const binding = `${identity.agentId}:${identity.taskId}:${identity.workspaceId}`;
       const hasOpen = !!delivered?.total || setupGap.length > 0;
       const fingerprint = digest(JSON.stringify({

@@ -31,9 +31,9 @@ export type CardStat = {
 
 // ---- Per card --------------------------------------------------------------------
 
-/** Leaving In review for a work lane or Todo: a message that resumed the card, or a drag back (second version §3.2). */
+/** Leaving In review for a work lane or Todo: a message that resumed the card, or a drag back (second version §3.2). Committed is a step forward (COMMITTED-STAGE-SPEC §5). */
 const isRound = (e: FlowEntry) =>
-  e.action === "status_changed" && e.from === "in_review" && !!e.to && e.to !== "done" && e.to !== "cancelled" && e.to !== "in_review";
+  e.action === "status_changed" && e.from === "in_review" && !!e.to && e.to !== "done" && e.to !== "cancelled" && e.to !== "in_review" && e.to !== "committed";
 
 export function cardStats(input: {
   histories: readonly TaskHistory[];

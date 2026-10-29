@@ -1,5 +1,13 @@
 # Implementation progress
 
+## Committed stage (card "commited stage") — 2026-10-29
+
+- New built-in status `committed` (*Committed*, `GitCommitHorizontal`, success colour) after In review. `deliveryStatuses`/`isDeliveryStatus` in `shared/model.ts` replace the `=== "in_review"` delivery checks in the agent write path (outputs, Move to Done, workpad/setup gate, HEAD stamp), reminders, the workpad delivery mark, agent habits and the memory feedback clue. Rules A1/A1r treat Committed like In review. Review rounds skip In review → Committed. [COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md)
+- Stored lanes: `completeLanes` runs inside `lanesSchema`, so SQLite rows, `board.json`, project-folder imports and RPC input with 9 lanes get Committed after In review, enabled; `projectLanes` inserts instead of appending. No board version bump.
+- Agents: `agentStatuses`, tool description, CLI (`status committed` with outputs/moves/acknowledge-open), skill + `SKILL.md` and turn checklist say to set it only once all of the card's changes are committed.
+- Strings: *Committed* and the reworded agent-tools note in the session settings (*…to Blocked, In review or Committed…*) in all catalogs. README (en, zh-CN): the loop sentence ends in Committed. Onboarding: no tour copy or tip; the tour's lane strip shows the basic loop and the lane shows on every board. Telemetry: no heartbeat field; `c_deliveries` stays In review only.
+- Checks in a temporary worktree of `7495a7c` with only this change: `npm run typecheck` exit 0; focused tests 134/134; `npm test` 1207 passed, 1 skipped, 0 failed. On the shared working tree (other sessions' uncommitted work included): typecheck exit 0; `npm test` 1215 passed, 1 failed, 1 skipped; the failure is `server/tool-server.test.ts` "MCP initialize/list…", which lists four new `flowly_*_card` tools from the uncommitted agent-cards work, not this change. Not run: plugin reload, UI check.
+
 ## Open workspace from a card (card "button to open associated workspace") — 2026-10-29
 
 - Board cards get an **Open workspace** button (`ArrowUpRight`) under `…` in their top-right action column, same size and visibility as `…`; it calls the host's `navigation.openWorkspace` for the card's workspace on its host (`openNativeWorkspace`, `client/session-state.ts`). Shown only when the host offers it and the workspace is live (the *Workspace unavailable* test). The card's context menu and the `…` action sheet list *Open workspace* after *Open details*. Short cards grow to fit the two-button column; titles keep their width. [CARD-DISPLAY-SPEC §7](CARD-DISPLAY-SPEC.md#7-open-workspace-button)

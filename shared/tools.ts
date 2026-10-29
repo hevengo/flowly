@@ -32,7 +32,7 @@ import {
   planStatuses,
 } from "./model";
 
-export const agentStatuses = ["design", "development", "test", "blocked", "in_review"] as const;
+export const agentStatuses = ["design", "development", "test", "blocked", "in_review", "committed"] as const;
 export const revisionSchema = z.strictObject({
   task: z.number().int().positive(),
   project: z.number().int().positive(),
@@ -80,7 +80,7 @@ const nextMoveList = z
 const deliveryMoves = nextMoveList
   .optional()
   .describe(
-    "The next steps for the user, recorded with this call: 1-3 messages they are most likely to send you next, the one you recommend first; [] when nothing needs the user this turn. Leave it out to record nothing. A moveTo=\"done\" move is only accepted together with in_review.",
+    "The next steps for the user, recorded with this call: 1-3 messages they are most likely to send you next, the one you recommend first; [] when nothing needs the user this turn. Leave it out to record nothing. A moveTo=\"done\" move is only accepted together with in_review or committed.",
   );
 
 const base = {
@@ -95,7 +95,7 @@ export const outputArtifactSchema = z.strictObject({
   note: z.string().trim().max(artifactLimits.note).optional(),
 });
 const deliveryOutputs = z.array(outputArtifactSchema).max(20).optional().describe(
-  "Deliverables from this call, recorded as output artifacts in the same transaction. Include PR/MR links, reports and evidence; pass [] when there are none. Omitting this field records nothing and returns a reminder. Only for status=in_review or kind=result.",
+  "Deliverables from this call, recorded as output artifacts in the same transaction. Include PR/MR links, reports and evidence; pass [] when there are none. Omitting this field records nothing and returns a reminder. Only for status=in_review, status=committed or kind=result.",
 );
 export const statusInputSchema = z.strictObject({
   ...base,

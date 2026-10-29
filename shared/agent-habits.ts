@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { addDays, dayKey, projectInsightsSchema, type FlowEntry } from "./insights";
 import { openNextMoves } from "./next-moves";
-import type { BoardEvent } from "./model";
+import { isDeliveryStatus, type BoardEvent } from "./model";
 
 /**
  * Agent habits (WORKFLOW-INSIGHTS-SPEC §12): how often an agent's turns end with next
@@ -249,7 +249,7 @@ function turnsOf(entries: readonly FlowEntry[]): Turn[] {
       turn.offersDone = turn.moves && !!e.offersDone;
       waiting.set(e.agentId, turn);
     } else if (e.action === "idea_proposed") turn.ideas++;
-    else if (e.action === "status_changed" && e.to === "in_review") turn.delivery = true;
+    else if (e.action === "status_changed" && isDeliveryStatus(e.to)) turn.delivery = true;
     if (e.reportKind === "result") turn.result = true;
     else if (e.reportKind === "question") turn.question = true;
   }

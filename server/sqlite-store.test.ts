@@ -82,6 +82,35 @@ async function jsonReading(board: unknown) {
   return new JsonBoardFile(other).load();
 }
 
+describe("lanes stored before Committed (COMMITTED-STAGE-SPEC §2)", () => {
+  test("a project row with 9 lanes reads with Committed after In review; the next write stores 10", async () => {
+    const d = await directory();
+    const board = fixture();
+    board.projects[0].lanes = (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: true }));
+    await writeBoard(d, board);
+    await open(d).read();
+    await stores.pop()!.close();
+    // The row as an older Flowly wrote it.
+    const db = new sqlite.DatabaseSync(join(d, "flowly.sqlite"));
+    const row = db.prepare("SELECT body FROM items WHERE collection = 'projects' AND key = 'p1'").get() as { body: string };
+    const project = JSON.parse(row.body);
+    project.lanes = project.lanes.filter((l: { status: string }) => l.status !== "committed");
+    db.prepare("UPDATE items SET body = ? WHERE collection = 'projects' AND key = 'p1'").run(JSON.stringify(project));
+    db.close();
+    const s = open(d);
+    const read = await s.read();
+    expect(read.projects[0].lanes!.map((l) => l.status)).toEqual(["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"]);
+    expect(onDisk(d).projects[0].lanes).toHaveLength(10);
+    await s.editTask({ id: "t1", revision: 1, status: "committed", actor: "human" });
+    await s.close();
+    stores.pop();
+    const stored = new sqlite.DatabaseSync(join(d, "flowly.sqlite"));
+    const after = JSON.parse((stored.prepare("SELECT body FROM items WHERE collection = 'projects' AND key = 'p1'").get() as { body: string }).body);
+    stored.close();
+    expect(after.lanes).toHaveLength(10);
+  });
+});
+
 describe("moving board.json to SQLite", () => {
   test("the first start moves the board: same board, a retired board.json, a verified snapshot and a backup", async () => {
     const d = await directory();

@@ -1,5 +1,5 @@
 import { needsNextMoves } from "../shared/next-moves";
-import type { Board } from "../shared/model";
+import { isDeliveryStatus, type Board } from "../shared/model";
 
 /** Agent-facing, English (NEXT-MOVES-SPEC §9.6). Text only: the write they ride on has already succeeded. */
 export const movesReminder =
@@ -9,7 +9,7 @@ export const answersReminder =
 export const ideasReminder =
   "You have proposed no ideas on this card. Consider 0-3 ideas (flowly_propose_idea) for worthwhile follow-ups you noticed: bugs, refactors, next features. Zero is fine; decide on purpose.";
 export const outputsReminder =
-  "This delivery omitted outputs. Before you end the turn, register its deliverables (especially PR/MR links, reports and evidence) with flowly_add_artifact role=output. On deliveries (status=in_review or kind=result), pass outputs=[{target,title,note}], or outputs=[] when there are none. This write already succeeded; do not repeat it just to add outputs.";
+  "This delivery omitted outputs. Before you end the turn, register its deliverables (especially PR/MR links, reports and evidence) with flowly_add_artifact role=output. On deliveries (status=in_review, status=committed or kind=result), pass outputs=[{target,title,note}], or outputs=[] when there are none. This write already succeeded; do not repeat it just to add outputs.";
 
 /** The write a reminder can ride on: a status change or a progress report, as the agent sent it. */
 export type DeliveryCall = { action: "status"; status: string } | { action: "progress"; kind: string };
@@ -25,7 +25,7 @@ export function deliveryReminders(
   ideasOn: boolean,
 ): string[] {
   const asks = call.action === "progress" && call.kind === "question";
-  const delivers = call.action === "status" && call.status === "in_review";
+  const delivers = call.action === "status" && isDeliveryStatus(call.status);
   const wraps = delivers || (call.action === "status" && call.status === "blocked") || asks || (call.action === "progress" && call.kind === "result");
   if (!wraps) return [];
   const out: string[] = [];

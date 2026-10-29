@@ -118,10 +118,14 @@ test("MCP initialize/list can precede actor creation; live calls require SDK con
     expect(listed.find((t) => t.name === name)!.inputSchema.properties).toHaveProperty("outputs");
   }
   // Delivery-time reminders (NEXT-MOVES-SPEC §9): the instructions, the tool texts and the result schema all know them.
-  expect(skillText).toContain("Every turn that delivers (in_review), asks (kind=question) or reports a result (kind=result) ends with next moves");
+  expect(skillText).toContain("Every turn that delivers (in_review or committed), asks (kind=question) or reports a result (kind=result) ends with next moves");
   expect(skillText).toContain("ask through your own question tool when you have one");
   expect(skillText).toContain("Ask each question one way only");
-  expect(skillText).toContain("At each delivery (in_review), review what you noticed");
+  expect(skillText).toContain("At each delivery (in_review or committed), review what you noticed");
+  // The Committed stage (COMMITTED-STAGE-SPEC §3): when to set it, in the skill, the checklist and the tool text.
+  expect(skillText).toContain("Once all of this card's changes are committed (you commit only when the user asks), set committed");
+  expect(skillText).toContain("flowly_update_status(committed) once all of the card's changes are committed");
+  expect(described("flowly_update_status")).toContain("Set committed only once all of this card's changes are committed");
   expect(skillText).toMatch(/reminders array/);
   expect(described("flowly_update_status")).toMatch(/reminders/);
   expect(described("flowly_report_progress")).toMatch(/reminders/);
@@ -535,6 +539,11 @@ test("CLI outputs and first refusal: real transport, persisted IDs and exact rep
   expect(await cli(...args)).toMatchObject({ replayed: true, receipt: delivered.receipt });
   await cli("current", "--save-request", snapshot);
   expect((await cli("note", "--kind", "result", "--request-file", snapshot, "--note", "No outputs", "--no-outputs", "--no-moves")).receipt.artifactIds).toEqual([]);
+  // status committed takes outputs and a Done move like in_review (COMMITTED-STAGE-SPEC §3).
+  await cli("current", "--save-request", snapshot);
+  const committed = await cli("status", "committed", "--request-file", snapshot, "--note", "Committed abc1234 and pushed", "--outputs", JSON.stringify([{ target: "https://github.com/fixture/repo/pull/2" }]), "--moves", JSON.stringify([{ label: "Move to Done", moveTo: "done" }]));
+  expect(committed.receipt).toMatchObject({ status: "committed", artifactIds: [expect.any(String)] });
+  expect(committed.current.activity.at(-1)).toMatchObject({ action: "next_moves_suggested", moves: [{ label: "Move to Done", moveTo: "done" }] });
   await x.store.mutate((board) => { board.tasks[0].status = "development"; board.tasks[0].revision++; delete board.tasks[0].tags; });
   await cli("current", "--save-request", snapshot);
   const ack = ["status", "in_review", "--request-file", snapshot, "--note", "No tags: deliberately omitted for this gate fixture", "--acknowledge-open", "--no-outputs", "--no-moves"];

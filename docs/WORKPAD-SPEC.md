@@ -188,6 +188,8 @@ plan: { agentId, own: boolean, items, at }[]         // 本卡各 session 的 Pl
 
 agent 调 `flowly_update_status(status=in_review)` 时（只在 agent 路径；人拖到 In review 不检查）：
 
+> 2026-10-29：`status=committed` 同样是交付，门槛、快照与卡面标记规则相同（[COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md) §3）。
+
 1. 先刷新 `head`，计算 `openItems`。
 2. `total = 0`：照常提交。没有 workpad（项目开启时）：2026-10-21 用户决定改为软卡，返回 `SETUP_INCOMPLETE`，见 [CARD-SETUP-SPEC](CARD-SETUP-SPEC.md) §3.4（已实现）；此前的“没有 workpad 照常提交”作废。
 3. `total > 0` 且本 session 尚未收到对当前状态的拒绝，或输入没有 `acknowledgeOpen: true`：返回 `WORKPAD_OPEN`，不提交任何内容（不写回执，同一 request 可以带确认后重试）。消息列出未完成项：“{n} workpad items are still open: … Deliver anyway only if the note explains each one (failed, not run, or out of date), with acknowledgeOpen=true.”

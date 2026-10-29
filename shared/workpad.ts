@@ -1,4 +1,5 @@
 import {
+  isDeliveryStatus,
   workpadLimits,
   type AcceptanceItem,
   type BoardEvent,
@@ -191,14 +192,14 @@ export function workpadNote(workpad: Pick<Workpad, "acceptance" | "validation" |
   return parts.join(" · ") || "Workpad cleared";
 }
 
-/** The delivery still describes the card's current stay in In review (§5.3). */
+/** The delivery still describes the card's current stay in In review or Committed (§5.3, COMMITTED-STAGE-SPEC §3). */
 export function currentDelivery(task: Pick<Task, "status">, workpad: Workpad | null | undefined, events: readonly BoardEvent[]) {
   const delivery = workpad?.delivery;
-  if (task.status !== "in_review" || !delivery) return null;
+  if (!isDeliveryStatus(task.status) || !delivery) return null;
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     // Events were trimmed or it is the same move: the delivery stands.
-    if (e.action === "status_changed" && e.to === "in_review") return e.id === delivery.eventId ? delivery : null;
+    if (e.action === "status_changed" && isDeliveryStatus(e.to)) return e.id === delivery.eventId ? delivery : null;
   }
   return delivery;
 }

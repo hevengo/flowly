@@ -1,4 +1,4 @@
-import { statusLabels, statuses, type Lane, type Project, type Status } from "./model";
+import { completeLanes, statusLabels, statuses, type Lane, type Project, type Status } from "./model";
 
 type WithLanes = Pick<Project, "lanes"> | null | undefined;
 
@@ -6,9 +6,8 @@ type WithLanes = Pick<Project, "lanes"> | null | undefined;
 export function projectLanes(project: WithLanes): Lane[] {
   const configured = project?.lanes;
   if (!configured) return statuses.map((status) => ({ status, enabled: true }));
-  // Defensive: statuses missing from stored data are appended, enabled.
-  const missing = statuses.filter((s) => !configured.some((l) => l.status === s));
-  return [...configured, ...missing.map((status) => ({ status, enabled: true }))];
+  // Defensive: statuses missing from stored data are inserted after their default predecessor, enabled.
+  return completeLanes(configured);
 }
 
 /** Enabled lanes in display order: the project's workflow. */

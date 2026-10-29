@@ -111,6 +111,8 @@ describe("board durability and business invariants", () => {
       { status: "development", enabled: true, name: "Doing" },
       { status: "test", enabled: true },
       { status: "in_review", enabled: true },
+      // Lanes stored before Committed get it after In review (COMMITTED-STAGE-SPEC §2).
+      { status: "committed", enabled: true },
       { status: "blocked", enabled: false },
       { status: "done", enabled: true },
       { status: "cancelled", enabled: true },
@@ -121,6 +123,23 @@ describe("board durability and business invariants", () => {
     await s.editTask({ id: "t1", revision: 1, title: "Migrated", actor: "human" });
     expect(JSON.parse(await readFile(s.path, "utf8"))).toMatchObject({ version: 5, tasks: [{ status: "development" }] });
     expect(await readFile(join(s.directory, "board.pre-v4.json"), "utf8")).toBe(source);
+  });
+  test("v5 lanes stored before Committed read with it after In review; reading rewrites nothing, the next write stores it", async () => {
+    const s = await setup(),
+      old = { ...fixture(), agentReceipts: [] };
+    const lanes = ["backlog", "todo", "design", "development", "test", "in_review", "blocked", "done", "cancelled"].map((status) => ({ status, enabled: status !== "backlog", ...(status === "in_review" ? { name: "QA" } : {}) }));
+    (old.projects[0] as Record<string, unknown>).lanes = lanes;
+    const source = JSON.stringify(old);
+    await writeFile(s.path, source);
+    const read = await s.read();
+    expect(read.projects[0].lanes!.map((l) => l.status)).toEqual(["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"]);
+    expect(read.projects[0].lanes![5]).toEqual({ status: "in_review", enabled: true, name: "QA" });
+    expect(read.projects[0].lanes![6]).toEqual({ status: "committed", enabled: true });
+    expect(await readFile(s.path, "utf8")).toBe(source);
+    await s.editTask({ id: "t1", revision: 1, status: "committed", actor: "human" });
+    const saved = JSON.parse(await readFile(s.path, "utf8"));
+    expect(saved.projects[0].lanes).toHaveLength(10);
+    expect(saved.tasks[0].status).toBe("committed");
   });
   test("v4 → v5 renames the artifact field ticket to external, keeps everything else, pre-v5 copy once (CONNECTORS-SPEC §3.1)", async () => {
     const s = await setup();

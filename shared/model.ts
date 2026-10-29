@@ -11,6 +11,7 @@ export const statuses = [
   "development",
   "test",
   "in_review",
+  "committed",
   "blocked",
   "done",
   "cancelled",
@@ -22,6 +23,7 @@ export const statusLabels: Record<Status, string> = localizedLabels({
   development: msg("Development"),
   test: msg("Test"),
   in_review: msg("In review"),
+  committed: msg("Committed"),
   blocked: msg("Blocked"),
   done: msg("Done"),
   cancelled: msg("Cancelled"),
@@ -30,6 +32,10 @@ export const statusLabels: Record<Status, string> = localizedLabels({
 export const workStatuses = ["design", "development", "test"] as const satisfies readonly Status[];
 export const isWorkStatus = (status: string): status is (typeof workStatuses)[number] =>
   (workStatuses as readonly string[]).includes(status);
+/** Statuses an agent delivers into: In review, and Committed once the card's changes are committed (COMMITTED-STAGE-SPEC §1). */
+export const deliveryStatuses = ["in_review", "committed"] as const satisfies readonly Status[];
+export const isDeliveryStatus = (status: string | undefined): status is (typeof deliveryStatuses)[number] =>
+  (deliveryStatuses as readonly (string | undefined)[]).includes(status);
 /** Retired status: only found in history (events, receipts) written before board v4. */
 export const legacyStatus = "in_progress" as const;
 export const priorities = ["low", "normal", "high", "urgent"] as const;
@@ -83,9 +89,24 @@ export const laneSchema = z.strictObject({
   name: z.string().trim().max(40).optional(),
   enabled: z.boolean(),
 });
+/**
+ * Fills in built-in statuses that stored lanes predate (Committed, COMMITTED-STAGE-SPEC §2): each missing one goes
+ * right after the nearest status before it in the default order, enabled. Anything else passes through for the schema to judge.
+ */
+export function completeLanes<T>(lanes: T): T {
+  if (!Array.isArray(lanes)) return lanes;
+  const out: unknown[] = [...lanes];
+  const at = (status: string) => out.findIndex((l) => typeof l === "object" && l !== null && (l as { status?: unknown }).status === status);
+  statuses.forEach((status, i) => {
+    if (at(status) >= 0) return;
+    let after = -1;
+    for (let j = i - 1; j >= 0 && after < 0; j--) after = at(statuses[j]);
+    out.splice(after + 1, 0, { status, enabled: true });
+  });
+  return out as T;
+}
 export const lanesSchema = z
-  .array(laneSchema)
-  .length(statuses.length)
+  .preprocess(completeLanes, z.array(laneSchema).length(statuses.length))
   .refine((lanes) => new Set(lanes.map((l) => l.status)).size === lanes.length, "Each lane appears once.")
   .refine((lanes) => lanes.some((l) => l.enabled), "Keep at least one lane enabled.");
 export type Lane = z.infer<typeof laneSchema>;

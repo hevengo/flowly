@@ -151,6 +151,7 @@ Agent 完成一段工作后常在回复末尾写“接下来要不要……或�
   - 沿用：一组至多 1 条 `moveTo`、非动作建议必须有 prompt、未知 `moveTo` 为 `INVALID_INPUT`、已 Done/Cancelled 的卡为 `TASK_FINISHED`。
   - **新增，仅对合并调用**：带 `moveTo:"done"` 的 `nextMoves` 只在这次调用之后卡片处于 In review 时接受（`status in_review`，或卡片已在 In review 时的 `report_progress`）；否则 `INVALID_INPUT`（“moveTo done is only offered with a delivery to In review”），整条调用不写入任何东西。这把 skill 里的“已交付到 In review”变成机械检查。独立工具不加这条，避免改变已有调用的行为。
   - 不做：在守护进程里判断“已提交并推送”（见 7.1，仍是 agent 的判断）。
+  - 2026-10-29：Committed 也是交付状态，`moveTo:"done"` 随 `status committed` 同样接受（[COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md) §3）。
 
 ### 8.3 写入语义
 

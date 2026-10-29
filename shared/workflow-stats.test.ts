@@ -67,6 +67,16 @@ describe("per card (§3.1, §3.2)", () => {
     expect(statsOf(base({ tasks: [task("a")], entries }))[0].rounds).toBe(0);
   });
 
+  it("does not count In review → Committed as a round (COMMITTED-STAGE-SPEC §5)", () => {
+    const entries = [
+      created("a"),
+      move("a", "2026-10-12T01:00:00.000Z", "todo", "in_review", { actor: "agent" }),
+      move("a", "2026-10-12T02:00:00.000Z", "in_review", "committed", { actor: "agent" }),
+      move("a", "2026-10-12T03:00:00.000Z", "committed", "done"),
+    ];
+    expect(statsOf(base({ tasks: [task("a")], entries }))[0].rounds).toBe(0);
+  });
+
   it("leaves out cards without a Done and cards whose history was cut", () => {
     const entries = [created("a"), move("a", "2026-10-12T01:00:00.000Z", "todo", "development"), move("b", "2026-10-12T01:00:00.000Z", "todo", "done")];
     expect(statsOf(base({ tasks: [task("a", { status: "development" }), task("b")], entries }))).toEqual([]);

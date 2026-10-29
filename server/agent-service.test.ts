@@ -11,6 +11,7 @@ import { setupReminder } from "../shared/card-setup";
 import { putArtifact } from "./artifacts";
 import { ExternalError } from "./connectors/http";
 import { turnChecklist } from "../shared/turn-checklist";
+import { currentDelivery } from "../shared/workpad";
 import { toolContextSchema } from "../shared/tools";
 
 const roots: string[] = [];
@@ -335,9 +336,9 @@ test("agents only see and use the project's enabled lanes", async () => {
   await x.store.updateProject({
     id: project.id,
     revision: project.revision,
-    lanes: (["backlog", "todo", "design", "development", "test", "in_review", "blocked", "done", "cancelled"] as const).map((status) => ({
+    lanes: (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({
       status,
-      enabled: status !== "blocked",
+      enabled: status !== "blocked" && status !== "committed",
       ...(status === "in_review" ? { name: "QA" } : {}),
     })),
   });
@@ -1249,4 +1250,49 @@ test("proposal replay reads legacy receipts without an idea ID while the idea is
   const before = await readFile(x.store.path, "utf8");
   expect(await restored.write(x.identity, "idea", call)).toMatchObject({ replayed: true, ideaId: first.ideaId });
   expect(await readFile(x.store.path, "utf8")).toBe(before);
+});
+
+test("committed is a delivery like In review: outputs, a Done move, the gate and its snapshot; refused when the lane is off", async () => {
+  const x = await setup({ workpad: false });
+  const repo = { head: "aaaaaaaaaaaa" };
+  x.service.git = fakeGit(repo);
+  let ctx = await x.service.get(x.identity);
+  expect(ctx.allowedStatuses).toEqual(["design", "development", "test", "blocked", "in_review", "committed"]);
+  await x.service.write(x.identity, "status", { ...input(ctx), status: "development" });
+  ctx = await x.service.get(x.identity);
+  await x.service.write(x.identity, "workpad", workpadInput(ctx, { acceptance: [{ text: "Works", done: true }], validation: [{ id: "unit", text: "Unit tests", state: "pass" }] }));
+  // Checks ran on the uncommitted tree; the commit makes them out of date at the move.
+  repo.head = "cccccccccccc";
+  ctx = await x.service.get(x.identity);
+  const done = [{ label: "Move to Done", moveTo: "done" }];
+  const call = { ...input(ctx, "Committed cccccccc; not pushed"), status: "committed", nextMoves: done, outputs: [{ target: "https://github.com/fixture/repo/pull/7" }] };
+  const refused = await x.service.write(x.identity, "status", call).catch((e) => e);
+  expect(refused).toMatchObject({ code: "WORKPAD_OPEN" });
+  expect(String(refused.message)).toContain("out of date");
+  expect((await x.store.read()).tasks[0]!.status).toBe("development");
+  const ok = await x.service.write(x.identity, "status", { ...call, acknowledgeOpen: true });
+  expect(ok.receipt).toMatchObject({ status: "committed", artifactIds: [expect.any(String)] });
+  expect(ok.reminders).toContain(ideasReminder);
+  expect(ok.reminders).not.toContain(movesReminder);
+  let board = await x.store.read();
+  const moved = board.events.find((e) => e.id === ok.receipt.eventId)!;
+  expect(moved).toMatchObject({ action: "status_changed", from: "development", to: "committed", workpad: { stale: 1, total: 1 } });
+  expect(board.workpads[0]!.delivery).toMatchObject({ total: 1, eventId: moved.id });
+  expect(currentDelivery(board.tasks[0]!, board.workpads[0], board.events)).toMatchObject({ eventId: moved.id });
+  expect(openNextMoves(board.events, x.identity.agentId)?.moves).toEqual(done);
+  expect(board.artifacts.map((a) => a.role)).toEqual(["output"]);
+  // A person moving it back to In review ends that delivery's mark.
+  await x.store.editTask({ id: "t", revision: board.tasks[0]!.revision, status: "in_review", actor: "human" });
+  expect(currentDelivery((await x.store.read()).tasks[0]!, board.workpads[0], (await x.store.read()).events)).toBeNull();
+  // The lane off: STATUS_UNAVAILABLE.
+  board = await x.store.read();
+  const project = board.projects[0]!;
+  await x.store.updateProject({
+    id: project.id,
+    revision: project.revision,
+    lanes: (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: status !== "committed" })),
+  });
+  ctx = await x.service.get(x.identity);
+  expect(ctx.allowedStatuses).not.toContain("committed");
+  await expect(x.service.write(x.identity, "status", { ...input(ctx), status: "committed", nextMoves: [] })).rejects.toMatchObject({ code: "STATUS_UNAVAILABLE" });
 });
