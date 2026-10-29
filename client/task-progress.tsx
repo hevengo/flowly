@@ -6,7 +6,7 @@ import { useRpc } from "@getpaseo/plugin/client";
 import { useQueryClient } from "@tanstack/react-query";
 import * as rpc from "../shared/rpc";
 import { modelLabel, targetText, type SummaryEntry, type SummaryOverview } from "../shared/summary";
-import { CardBody, CardField, CardFootnote, CardHeadline, ContentCard } from "./content-card";
+import { CardBody, CardField, CardFootnote, CardHeadline, ContentCard, PROGRESS_CLAMP_HEIGHT } from "./content-card";
 import { Marked, useMark } from "./drawer-focus";
 import { Section, type SectionState } from "./disclosure";
 import { summariesKey, useSummariesQuery } from "./queries";
@@ -70,6 +70,7 @@ export function TaskProgress({ taskId, active, section }: { taskId: string; acti
       {latest ? (
         <ContentCard
           openWhen={mark}
+          clampHeight={PROGRESS_CLAMP_HEIGHT}
           footer={<CardFootnote>{t("Updated {time}", { time: relativeTime(latest.at) })} · {modelLabel(latest.model)}</CardFootnote>}
         >
           {/* A search hit in Target shows it even where the workpad replaces it (DRAWER-SPEC "Focus from search" 7). */}

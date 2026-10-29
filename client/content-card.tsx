@@ -15,16 +15,17 @@ export const cardFrameStyle = (colors: { border: string; surface1: string }) =>
 /**
  * The content card style first built for the drawer's Progress card, shared so
  * Progress, Ideas and later cards read the same: one bordered surface, 12 pt
- * padding, a body clamped to about five lines with a fade, and one footer row
- * with Show more / Show less on the left and `footer` (a timestamp or the
- * card's actions) on the right. `after` renders below the padded area, full
- * width (e.g. the Ideas page's source line).
+ * padding, a body clamped to `clampHeight` (about five lines by default) with
+ * a fade, and one footer row with Show more / Show less on the left and
+ * `footer` (a timestamp or the card's actions) on the right. `after` renders
+ * below the padded area, full width (e.g. the Ideas page's source line).
  */
 export function ContentCard({
   footer,
   after,
   defaultOpen = false,
   openWhen,
+  clampHeight = CLAMP_HEIGHT,
   children,
 }: {
   footer?: ReactNode;
@@ -33,13 +34,15 @@ export function ContentCard({
   defaultOpen?: boolean;
   /** Expands whenever this changes to a value (a search hit on the card); Show less still collapses it. */
   openWhen?: unknown;
+  /** Collapsed body height; the drawer's Progress card uses PROGRESS_CLAMP_HEIGHT. */
+  clampHeight?: number;
   children: ReactNode;
 }) {
   const { colors } = useTheme();
   return (
     <View style={cardFrameStyle(colors)}>
       <View style={{ padding: space[3], paddingBottom: space[3] }}>
-        <Clamped background={colors.surface1} footer={footer} defaultOpen={defaultOpen} openWhen={openWhen}>
+        <Clamped background={colors.surface1} footer={footer} defaultOpen={defaultOpen} openWhen={openWhen} clampHeight={clampHeight}>
           {children}
         </Clamped>
       </View>
@@ -110,11 +113,18 @@ export function CardFootnote({ children }: { children: ReactNode }) {
   );
 }
 
-/** About five lines of content; longer content collapses as a whole to this height. */
+/** About five lines of content; longer content collapses as a whole to this height (Ideas, Memory, the timeline Progress row). */
 const CLAMP_HEIGHT = 104;
 
 /**
- * Clamps its children as one block to CLAMP_HEIGHT with a fade, and offers
+ * The drawer's Progress card: about twelve lines, so State, four Recap lines and
+ * Next show in full at the default drawer width; a summary that still shows
+ * Target usually collapses (TASK-SUMMARY-SPEC §7).
+ */
+export const PROGRESS_CLAMP_HEIGHT = 240;
+
+/**
+ * Clamps its children as one block to `clampHeight` with a fade, and offers
  * Show more / Show less with an animated height (TASK-SUMMARY-SPEC §7).
  * Content that fits shows in full without a toggle. The toggle sits in the
  * bottom-left corner and `footer` on the right of the same row.
@@ -125,12 +135,14 @@ function Clamped({
   footer,
   defaultOpen = false,
   openWhen,
+  clampHeight,
   children,
 }: {
   background: string;
   footer?: ReactNode;
   defaultOpen?: boolean;
   openWhen?: unknown;
+  clampHeight: number;
   children: ReactNode;
 }) {
   const [natural, setNatural] = useState(0);
@@ -138,8 +150,8 @@ function Clamped({
   useEffect(() => {
     if (openWhen) setOpen(true);
   }, [openWhen]);
-  const overflows = natural > CLAMP_HEIGHT + 8;
-  const target = natural ? (open || !overflows ? natural : CLAMP_HEIGHT) : null;
+  const overflows = natural > clampHeight + 8;
+  const target = natural ? (open || !overflows ? natural : clampHeight) : null;
   const height = useMotionHeight(target);
   const fade = useMotionValue(overflows && !open ? 1 : 0);
   return (
@@ -148,7 +160,7 @@ function Clamped({
         style={{
           overflow: "hidden",
           // Until measured, cap without animating so long content never flashes open.
-          ...(target === null ? { maxHeight: CLAMP_HEIGHT } : { height }),
+          ...(target === null ? { maxHeight: clampHeight } : { height }),
         }}
       >
         <View onLayout={(e) => setNatural(Math.ceil(e.nativeEvent.layout.height))}>{children}</View>

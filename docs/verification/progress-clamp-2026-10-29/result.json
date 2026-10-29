@@ -1,0 +1,276 @@
+{
+  "project": "paseo-flowly-hevengo",
+  "clamp": 240,
+  "windows": {
+    "wide": 1600,
+    "default": 1477,
+    "narrow": 1100
+  },
+  "h": 1000,
+  "cards": {
+    "switch local and worktree": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 243,
+        "natural": 243,
+        "toggle": null
+      }
+    },
+    "make the progress box higher": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 206,
+        "natural": 206,
+        "toggle": null
+      }
+    },
+    "speed settings for agents": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 244,
+        "natural": 244,
+        "toggle": null
+      }
+    },
+    "badge for worktree vs local": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 244,
+        "natural": 244,
+        "toggle": null
+      }
+    },
+    "integrated stage": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 240,
+        "natural": 263,
+        "toggle": "Show more"
+      }
+    },
+    "hard disable telementry": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 244,
+        "natural": 244,
+        "toggle": null
+      }
+    },
+    "button to open associated workspace": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 225,
+        "natural": 225,
+        "toggle": null
+      }
+    },
+    "commited stage": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 224,
+        "natural": 224,
+        "toggle": null
+      }
+    },
+    "create cards via ai agent": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 240,
+        "natural": 282,
+        "toggle": "Show more"
+      }
+    },
+    "unlock the sidebar max width": {
+      "wide": {
+        "drawer": 708,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "default": {
+        "drawer": 640,
+        "found": true,
+        "visible": 167,
+        "natural": 167,
+        "toggle": null
+      },
+      "narrow": {
+        "drawer": 431,
+        "found": true,
+        "visible": 225,
+        "natural": 225,
+        "toggle": null
+      }
+    }
+  },
+  "toggle": {
+    "card": "integrated stage",
+    "expanded": {
+      "drawer": 431,
+      "found": true,
+      "visible": 263,
+      "natural": 263,
+      "toggle": "Show less"
+    },
+    "collapsedAgain": {
+      "drawer": 431,
+      "found": true,
+      "visible": 240,
+      "natural": 263,
+      "toggle": "Show more"
+    }
+  },
+  "errors": [],
+  "failures": [],
+  "wideSummary": {
+    "cards": 10,
+    "inFull": 10,
+    "drawer": 708
+  },
+  "defaultSummary": {
+    "cards": 10,
+    "inFull": 10,
+    "drawer": 640
+  },
+  "narrowSummary": {
+    "cards": 10,
+    "inFull": 8,
+    "drawer": 431
+  }
+}

@@ -81,7 +81,7 @@ Auto：按 `claude/claude-haiku-5-5` → `codex/gpt-6-luna` 顺序尝试可用�
 ## 7. UI
 
 - 卡片：有 summary 时，标题下显示 `state`，最多一行（超出以省略号结尾）；全文在侧栏 Progress 查看（2026-10-15 用户反馈）。
-- 侧栏：描述之后、Sessions 之前的 **Progress** 区块：State（强调）、Recap、Next，脚注“Updated 5m ago · Haiku 5.5”。文字从不截断，简短由 prompt 约束。整块内容（State、Target、Recap、Next 一起）超过约 5 行（104 pt）时整体收起到该高度，底部渐隐，左下角（与右侧“Updated · 模型”脚注同一行，2026-10-19 起位置对调，与 Ideas 卡片一致，共用 `client/content-card.tsx` 的 `ContentCard` 通用卡片样式）的 Show more / Show less 展开或收起；高度用动画过渡（展开 220 ms 减速、收起 160 ms 加速，可打断，遵循 Reduce Motion；首次测量直接定位不播放）。内容未超出时完整显示且不出现按钮。History 列表同样不截断（2026-10-15 用户反馈）。
+- 侧栏：描述之后、Sessions 之前的 **Progress** 区块：State（强调）、Recap、Next，脚注“Updated 5m ago · Haiku 5.5”。文字从不截断，简短由 prompt 约束。整块内容（State、Target、Recap、Next 一起）超过约 12 行（240 pt）时整体收起到该高度，底部渐隐（2026-10-29 用户反馈：原先约 5 行（104 pt）几乎每条 summary 都被截断；240 pt 下 State、4 行 Recap 与 Next 在默认侧栏宽度约 640 pt 时可完整显示，带 Target 的通常仍收起。该高度经 `ContentCard` 的 `clampHeight` 参数只用于侧栏 Progress，Ideas、Memory 和 Paseo 时间线中的 Progress 行仍为 104 pt），左下角（与右侧“Updated · 模型”脚注同一行，2026-10-19 起位置对调，与 Ideas 卡片一致，共用 `client/content-card.tsx` 的 `ContentCard` 通用卡片样式）的 Show more / Show less 展开或收起；高度用动画过渡（展开 220 ms 减速、收起 160 ms 加速，可打断，遵循 Reduce Motion；首次测量直接定位不播放）。内容未超出时完整显示且不出现按钮。History 列表同样不截断（2026-10-15 用户反馈）。
   - 运行中显示 “Updating…”；最近一次失败显示一行弱化错误，不弹窗。
   - **Refresh** 按钮手动触发；**History** 展开为倒序版本列表，每条显示时间与 state，点开看 Recap/Next。
   - 无 summary 时显示一行提示：“Updates after each agent turn.”（自动关闭时提示去设置开启）。
