@@ -77,6 +77,22 @@ describe("per card (§3.1, §3.2)", () => {
     expect(statsOf(base({ tasks: [task("a")], entries }))[0].rounds).toBe(0);
   });
 
+  it("does not count moves into Integrated or leaving it for rework as rounds; In review → work stage still is one (INTEGRATED-STAGE-SPEC §5)", () => {
+    const entries = [
+      created("a"),
+      move("a", "2026-10-12T01:00:00.000Z", "todo", "in_review", { actor: "agent" }),
+      move("a", "2026-10-12T02:00:00.000Z", "in_review", "integrated", { actor: "agent" }),
+      move("a", "2026-10-12T03:00:00.000Z", "integrated", "development"),
+      move("a", "2026-10-12T04:00:00.000Z", "development", "committed", { actor: "agent" }),
+      move("a", "2026-10-12T05:00:00.000Z", "committed", "integrated", { actor: "agent" }),
+      move("a", "2026-10-12T06:00:00.000Z", "integrated", "in_review"),
+      move("a", "2026-10-12T07:00:00.000Z", "in_review", "development"),
+      move("a", "2026-10-12T08:00:00.000Z", "development", "integrated", { actor: "agent" }),
+      move("a", "2026-10-12T09:00:00.000Z", "integrated", "done"),
+    ];
+    expect(statsOf(base({ tasks: [task("a")], entries }))[0].rounds).toBe(1);
+  });
+
   it("leaves out cards without a Done and cards whose history was cut", () => {
     const entries = [created("a"), move("a", "2026-10-12T01:00:00.000Z", "todo", "development"), move("b", "2026-10-12T01:00:00.000Z", "todo", "done")];
     expect(statsOf(base({ tasks: [task("a", { status: "development" }), task("b")], entries }))).toEqual([]);

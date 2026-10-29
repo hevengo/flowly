@@ -2,6 +2,8 @@
 
 > 2026-10-29: Committed（[COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md) §4）在 A1/A1r 中与 In review 相同：新一轮从 Committed 进 Development，本轮没有任何看板报告时 A1r 恢复到 Committed。
 >
+> 2026-10-29: Integrated（[INTEGRATED-STAGE-SPEC](INTEGRATED-STAGE-SPEC.md) §4）与 Committed 相同：新一轮从 Integrated 进 Development，本轮没有任何看板报告时 A1r 恢复到 Integrated；没有规则会把卡片移进 Integrated。
+>
 > 2026-10-15 修订（全局设置）：自动流转同时作为插件设置项提供：Ultra Kanban settings → Moving cards → “Auto-update status from sessions”，host 级设置 `auto-status`（`{ autoStatus: boolean }`），**默认开启**，未保存或无效的存储值按开启处理。关闭时 A1/A1r 都不运行（turn 生命周期事实照常记录，M1/M2 标记不受影响）；开启时项目 `autoStatus=false` 仍可单独关闭该项目（项目表单开关改名 “Auto-update status in this project”）。即规则生效 = 全局开启 且 项目未关闭。设置读取失败时按默认开启。
 >
 > 2026-10-15 修订：In progress 已拆为 Design / Development / Test（[WORKFLOW-STAGES-SPEC](WORKFLOW-STAGES-SPEC.md)）。A1 不再处理 Backlog/Todo（由 agent 自选开工阶段），从 In review 继续时进 Development，从 Blocked 继续时回到上一个工作阶段；A1r、M2 中的 “In progress” 指任一工作阶段。下表保留原文作为历史。

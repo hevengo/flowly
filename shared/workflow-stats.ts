@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isWorkStatus } from "./model";
+import { isDeliveryStatus, isWorkStatus } from "./model";
 import { addDays, dayStart, type FlowEntry, type TaskHistory } from "./insights";
 import { activitySchema } from "./activity";
 import { habitsSchema } from "./agent-habits";
@@ -31,9 +31,9 @@ export type CardStat = {
 
 // ---- Per card --------------------------------------------------------------------
 
-/** Leaving In review for a work lane or Todo: a message that resumed the card, or a drag back (second version §3.2). Committed is a step forward (COMMITTED-STAGE-SPEC §5). */
+/** Leaving In review for a work lane or Todo: a message that resumed the card, or a drag back (second version §3.2). Committed and Integrated are steps forward (COMMITTED-STAGE-SPEC §5, INTEGRATED-STAGE-SPEC §5). */
 const isRound = (e: FlowEntry) =>
-  e.action === "status_changed" && e.from === "in_review" && !!e.to && e.to !== "done" && e.to !== "cancelled" && e.to !== "in_review" && e.to !== "committed";
+  e.action === "status_changed" && e.from === "in_review" && !!e.to && e.to !== "done" && e.to !== "cancelled" && !isDeliveryStatus(e.to);
 
 export function cardStats(input: {
   histories: readonly TaskHistory[];

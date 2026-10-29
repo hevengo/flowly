@@ -483,7 +483,7 @@ export class AgentService {
       (action === "progress" && (input as ProgressInput).kind === "result");
     const outputs = action === "status" || action === "progress" ? (input as StatusInput | ProgressInput).outputs : undefined;
     if (outputs !== undefined && !outputDelivery)
-      throw new ToolError("INVALID_INPUT", "outputs is only valid for status=in_review, status=committed or kind=result.");
+      throw new ToolError("INVALID_INPUT", "outputs is only valid for status=in_review, status=committed, status=integrated or kind=result.");
     const artifactWrite = action === "artifact" || action === "artifact_remove";
     const artifactsOn = artifactWrite || outputDelivery ? await this.artifactsOn() : true;
     const key = `${identity.agentId}:${digest(input.request.id)}`,
@@ -666,7 +666,7 @@ export class AgentService {
       if (carried?.some((m) => m.moveTo === "done") && !isDeliveryStatus(next))
         throw new ToolError(
           "INVALID_INPUT",
-          "A moveTo=\"done\" move is only offered together with a delivery to In review or Committed (status in_review or committed). Leave it out, or deliver first.",
+          "A moveTo=\"done\" move is only offered together with a delivery to In review, Committed or Integrated (status in_review, committed or integrated). Leave it out, or deliver first.",
         );
       // Soft delivery gate (WORKPAD-SPEC §5.3): open items need an explicit acknowledgement.
       // Off for the project (WORKPAD-SPEC §9): no gate, and the stored workpad stays as it is.

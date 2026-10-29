@@ -3,6 +3,8 @@
 状态：用户 2026-10-15 批准（“可以 试试看吧，不行再改回去”），已实现。回退见 §8。
 
 > 2026-10-29：In review 之后新增 Committed（[COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md)），状态集合长度为 10；它不是工作阶段。
+>
+> 2026-10-29：Committed 之后新增 Integrated（[INTEGRATED-STAGE-SPEC](INTEGRATED-STAGE-SPEC.md)），状态集合长度为 11；它也不是工作阶段。
 
 用户决定：
 1. In progress 范围过大，拆成 **Design → Development → Test** 三个阶段；

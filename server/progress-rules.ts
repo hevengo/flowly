@@ -41,11 +41,11 @@ export function recordLifecycle(
 }
 
 /** Statuses a new turn resumes from: continuing after review, commit (COMMITTED-STAGE-SPEC §4) or a blocker. */
-const restartable: readonly Status[] = ["in_review", "committed", "blocked"];
+const restartable: readonly Status[] = ["in_review", "committed", "integrated", "blocked"];
 
 /**
  * The work stage a resumed card goes to. Feedback after review is rework, so a card
- * in review (or committed) resumes in Development. A blocked card returns to the latest stage it was
+ * in review (or committed, or integrated) resumes in Development. A blocked card returns to the latest stage it was
  * in (the retired In progress counts as Development). Disabled lanes fall back to
  * the first enabled stage; null when the workflow has no enabled work stage. The
  * agent corrects the stage when the turn's work belongs elsewhere.
@@ -62,7 +62,7 @@ export function resumeStage(board: Board, task: Task, project: Parameters<typeof
 }
 
 /**
- * Rule A1: a Kanban-managed session starting a turn on a card in review, committed or blocked
+ * Rule A1: a Kanban-managed session starting a turn on a card in review, committed, integrated or blocked
  * means work resumes (see resumeStage). Starting from Backlog/Todo leaves
  * the card alone: the agent decides whether to begin with Design or Development
  * (WORKFLOW-STAGES-SPEC). Never touches finished/archived cards or projects that
@@ -106,7 +106,7 @@ export function applyTurnStarted(
 }
 
 /**
- * Rule A1r: a turn that A1 resumed from In review/Committed/Blocked, which then ends
+ * Rule A1r: a turn that A1 resumed from In review/Committed/Integrated/Blocked, which then ends
  * without any Kanban report, restores the previous status. A casual message
  * ("thanks") must not leave a reviewed card looking active.
  */

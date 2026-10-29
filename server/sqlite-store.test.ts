@@ -82,11 +82,15 @@ async function jsonReading(board: unknown) {
   return new JsonBoardFile(other).load();
 }
 
-describe("lanes stored before Committed (COMMITTED-STAGE-SPEC §2)", () => {
-  test("a project row with 9 lanes reads with Committed after In review; the next write stores 10", async () => {
+describe("lanes stored before Committed or Integrated (COMMITTED-STAGE-SPEC §2, INTEGRATED-STAGE-SPEC §2)", () => {
+  const all = ["backlog", "todo", "design", "development", "test", "in_review", "committed", "integrated", "blocked", "done", "cancelled"] as const;
+  test.each([
+    { rows: 9, missing: ["committed", "integrated"] },
+    { rows: 10, missing: ["integrated"] },
+  ])("a project row with $rows lanes reads with the missing ones in place; the next write stores 11", async ({ missing }) => {
     const d = await directory();
     const board = fixture();
-    board.projects[0].lanes = (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: true }));
+    board.projects[0].lanes = all.map((status) => ({ status, enabled: true }));
     await writeBoard(d, board);
     await open(d).read();
     await stores.pop()!.close();
@@ -94,20 +98,20 @@ describe("lanes stored before Committed (COMMITTED-STAGE-SPEC §2)", () => {
     const db = new sqlite.DatabaseSync(join(d, "flowly.sqlite"));
     const row = db.prepare("SELECT body FROM items WHERE collection = 'projects' AND key = 'p1'").get() as { body: string };
     const project = JSON.parse(row.body);
-    project.lanes = project.lanes.filter((l: { status: string }) => l.status !== "committed");
+    project.lanes = project.lanes.filter((l: { status: string }) => !missing.includes(l.status));
     db.prepare("UPDATE items SET body = ? WHERE collection = 'projects' AND key = 'p1'").run(JSON.stringify(project));
     db.close();
     const s = open(d);
     const read = await s.read();
-    expect(read.projects[0].lanes!.map((l) => l.status)).toEqual(["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"]);
-    expect(onDisk(d).projects[0].lanes).toHaveLength(10);
-    await s.editTask({ id: "t1", revision: 1, status: "committed", actor: "human" });
+    expect(read.projects[0].lanes!.map((l) => l.status)).toEqual(all);
+    expect(onDisk(d).projects[0].lanes).toHaveLength(11);
+    await s.editTask({ id: "t1", revision: 1, status: "integrated", actor: "human" });
     await s.close();
     stores.pop();
     const stored = new sqlite.DatabaseSync(join(d, "flowly.sqlite"));
     const after = JSON.parse((stored.prepare("SELECT body FROM items WHERE collection = 'projects' AND key = 'p1'").get() as { body: string }).body);
     stored.close();
-    expect(after.lanes).toHaveLength(10);
+    expect(after.lanes).toHaveLength(11);
   });
 });
 

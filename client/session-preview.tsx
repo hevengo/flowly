@@ -947,7 +947,7 @@ function SessionPreviewView({
               <Label muted size={font.sm}>{tools.data?.ready ? t("Ready") : t("Not ready")}</Label>
             </View>
             <Label muted size={font.sm}>
-              {t("Lets this agent read its task, report progress and move it between Design, Development and Test, to Blocked, In review or Committed. You confirm Done or Cancelled.")}</Label>
+              {t("Lets this agent read its task, report progress and move it between Design, Development and Test, to Blocked, In review, Committed or Integrated. You confirm Done or Cancelled.")}</Label>
             <Label muted size={font.sm}>
               {access.data?.methods.length
                 ? t("Configuration provided: {methods}", { methods: access.data.methods.join(" + ").toUpperCase() })

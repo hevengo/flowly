@@ -192,7 +192,7 @@ export function workpadNote(workpad: Pick<Workpad, "acceptance" | "validation" |
   return parts.join(" · ") || "Workpad cleared";
 }
 
-/** The delivery still describes the card's current stay in In review or Committed (§5.3, COMMITTED-STAGE-SPEC §3). */
+/** The delivery still describes the card's current stay in a delivery status (§5.3, COMMITTED-STAGE-SPEC §3, INTEGRATED-STAGE-SPEC §3). */
 export function currentDelivery(task: Pick<Task, "status">, workpad: Workpad | null | undefined, events: readonly BoardEvent[]) {
   const delivery = workpad?.delivery;
   if (!isDeliveryStatus(task.status) || !delivery) return null;

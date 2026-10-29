@@ -36,7 +36,7 @@ Open **Flowly** from Paseo's sidebar. The daemon needs the `paseo` CLI on its pa
 
 ### 1. Automatic status flow
 
-Start a session from a card and the card follows the work: **Design → Development → Test → In review → Committed**. The agent sets its stage through scoped Kanban tools, and moves the card to Committed once it has committed the card's changes at your request; the daemon also moves cards when a session starts or resumes a turn. A finished turn never marks a card Done. Done and Cancelled stay your decision. Cards show running, finished, unread and needs-attention session counts, and the latest agent output. Cards that finished more than 14 days ago (configurable in *Settings → Workflow*) fold under **Show older** at the bottom of Done and Cancelled, so the board stays about current work.
+Start a session from a card and the card follows the work: **Design → Development → Test → In review → Committed → Integrated**. The agent sets its stage through scoped Kanban tools, moves the card to Committed once it has committed the card's changes at your request, and to Integrated once those commits are in the main checkout's branch; the daemon also moves cards when a session starts or resumes a turn. A finished turn never marks a card Done. Done and Cancelled stay your decision. Cards show running, finished, unread and needs-attention session counts, and the latest agent output. Cards that finished more than 14 days ago (configurable in *Settings → Workflow*) fold under **Show older** at the bottom of Done and Cancelled, so the board stays about current work.
 
 Turn it off globally (*Settings → Workflow → Moving cards*) or per project.
 

@@ -12,6 +12,7 @@ export const statuses = [
   "test",
   "in_review",
   "committed",
+  "integrated",
   "blocked",
   "done",
   "cancelled",
@@ -24,6 +25,7 @@ export const statusLabels: Record<Status, string> = localizedLabels({
   test: msg("Test"),
   in_review: msg("In review"),
   committed: msg("Committed"),
+  integrated: msg("Integrated"),
   blocked: msg("Blocked"),
   done: msg("Done"),
   cancelled: msg("Cancelled"),
@@ -32,8 +34,11 @@ export const statusLabels: Record<Status, string> = localizedLabels({
 export const workStatuses = ["design", "development", "test"] as const satisfies readonly Status[];
 export const isWorkStatus = (status: string): status is (typeof workStatuses)[number] =>
   (workStatuses as readonly string[]).includes(status);
-/** Statuses an agent delivers into: In review, and Committed once the card's changes are committed (COMMITTED-STAGE-SPEC §1). */
-export const deliveryStatuses = ["in_review", "committed"] as const satisfies readonly Status[];
+/**
+ * Statuses an agent delivers into: In review, Committed once the card's changes are committed (COMMITTED-STAGE-SPEC §1),
+ * and Integrated once its commits are in the main checkout's branch (INTEGRATED-STAGE-SPEC §1).
+ */
+export const deliveryStatuses = ["in_review", "committed", "integrated"] as const satisfies readonly Status[];
 export const isDeliveryStatus = (status: string | undefined): status is (typeof deliveryStatuses)[number] =>
   (deliveryStatuses as readonly (string | undefined)[]).includes(status);
 /** Retired status: only found in history (events, receipts) written before board v4. */
@@ -90,7 +95,7 @@ export const laneSchema = z.strictObject({
   enabled: z.boolean(),
 });
 /**
- * Fills in built-in statuses that stored lanes predate (Committed, COMMITTED-STAGE-SPEC §2): each missing one goes
+ * Fills in built-in statuses that stored lanes predate (Committed, Integrated; COMMITTED-STAGE-SPEC §2): each missing one goes
  * right after the nearest status before it in the default order, enabled. Anything else passes through for the schema to judge.
  */
 export function completeLanes<T>(lanes: T): T {

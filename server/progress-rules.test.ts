@@ -71,7 +71,7 @@ test("A1 resumes review in Development and blocked in the previous work stage", 
 
 test("A1 resume skips disabled stages and leaves the card when no stage is enabled", () => {
   const lanes = (on: (s: Status) => boolean) =>
-    (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: on(status) }));
+    (["backlog", "todo", "design", "development", "test", "in_review", "committed", "integrated", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: on(status) }));
   const b = board("blocked");
   b.projects[0].lanes = lanes((s) => s !== "test");
   store.event(b, { taskId: "t", actor: "agent", action: "status_changed", from: "development", to: "test" });
@@ -242,7 +242,33 @@ test("A1 resumes a committed card in Development; A1r restores Committed when no
   expect(w.tasks[0].status).toBe("development");
   // Development off: the first enabled work stage, like In review.
   const noDev = board("committed");
-  noDev.projects[0].lanes = (["backlog", "todo", "design", "development", "test", "in_review", "committed", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: status !== "development" }));
+  noDev.projects[0].lanes = (["backlog", "todo", "design", "development", "test", "in_review", "committed", "integrated", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: status !== "development" }));
+  expect(applyTurnStarted(store, noDev, id, "S")).toBe(true);
+  expect(noDev.tasks[0].status).toBe("design");
+});
+
+test("A1 resumes an integrated card in Development; A1r restores Integrated when nothing was reported (INTEGRATED-STAGE-SPEC §4)", async () => {
+  const { applyTurnEnded } = await import("./progress-rules");
+  const done = { kind: "completed" } as const;
+  const b = board("integrated");
+  store.event(b, { taskId: "t", actor: "agent", action: "status_changed", from: "committed", to: "integrated" });
+  recordLifecycle(store, b, id, "agent.turn_started");
+  expect(applyTurnStarted(store, b, id, "S")).toBe(true);
+  expect(b.tasks[0]).toMatchObject({ status: "development", revision: 2 });
+  expect(b.events.at(-1)).toMatchObject({ rule: "A1", from: "integrated", to: "development" });
+  expect(applyTurnEnded(store, b, id, done)).toBe(true);
+  expect(b.tasks[0]).toMatchObject({ status: "integrated", revision: 3 });
+  expect(b.events.at(-1)).toMatchObject({ rule: "A1r", from: "development", to: "integrated" });
+  // Work reported: stays in Development.
+  const w = board("integrated");
+  recordLifecycle(store, w, id, "agent.turn_started");
+  applyTurnStarted(store, w, id, "S");
+  store.event(w, { taskId: "t", actor: "agent", action: "progress_reported", agentId: "a", note: "fixing" });
+  expect(applyTurnEnded(store, w, id, done)).toBe(false);
+  expect(w.tasks[0].status).toBe("development");
+  // Development off: the first enabled work stage.
+  const noDev = board("integrated");
+  noDev.projects[0].lanes = (["backlog", "todo", "design", "development", "test", "in_review", "committed", "integrated", "blocked", "done", "cancelled"] as const).map((status) => ({ status, enabled: status !== "development" }));
   expect(applyTurnStarted(store, noDev, id, "S")).toBe(true);
   expect(noDev.tasks[0].status).toBe("design");
 });
