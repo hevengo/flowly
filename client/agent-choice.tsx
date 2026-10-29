@@ -1,3 +1,4 @@
+import { suggestedMode } from "../shared/agent-defaults";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { usePaseo } from "@getpaseo/plugin/client";
@@ -6,7 +7,7 @@ import { Label, font, space } from "./ui";
 import { PickerGroup, PickerRow } from "./picker";
 import { modelOptions, providerOptions } from "./options";
 import { t } from "../shared/i18n";
-import { speedFeature, speedFeatureValues } from "../shared/agent-speed";
+import { suggestedSpeed, speedFeature, speedFeatureValues } from "../shared/agent-speed";
 
 export type AgentDefaults = { provider: string; model: string; mode: string; thinking?: string; speed?: string } | null | undefined;
 
@@ -20,9 +21,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
   const paseo = usePaseo();
   const [provider, setProviderState] = useState(defaults?.provider || "codex"),
     [model, setModel] = useState(defaults?.model || ""),
-    [mode, setMode] = useState(defaults?.mode || ""),
+    [mode, setMode] = useState(suggestedMode(defaults?.provider || "codex", defaults?.mode)),
     [thinking, setThinking] = useState(defaults?.thinking || ""),
-    [speed, setSpeed] = useState(defaults?.speed || "");
+    [speed, setSpeed] = useState(suggestedSpeed(defaults?.provider || "codex", defaults?.speed));
   const providers = useQuery({
     queryKey: ["flowly", "providers"],
     queryFn: () => paseo.providers.listAvailable(),
@@ -95,9 +96,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
       if (next === provider) return;
       setProviderState(next);
       setModel("");
-      setMode("");
+      setMode(suggestedMode(next));
       setThinking("");
-      setSpeed("");
+      setSpeed(suggestedSpeed(next));
     },
     setModel,
     setMode,
@@ -106,9 +107,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
     reset(next: AgentDefaults) {
       setProviderState(next?.provider || "codex");
       setModel(next?.model || "");
-      setMode(next?.mode || "");
+      setMode(suggestedMode(next?.provider || "codex", next?.mode));
       setThinking(next?.thinking || "");
-      setSpeed(next?.speed || "");
+      setSpeed(suggestedSpeed(next?.provider || "codex", next?.speed));
     },
     chosenModel,
     chosenMode,

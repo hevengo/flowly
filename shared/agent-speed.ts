@@ -66,3 +66,8 @@ export function sessionSpeed(features: readonly ProviderFeature[] | null | undef
   const value = typeof feature.value === "string" ? feature.value : "";
   return value && !feature.options?.find((o) => o.id === value)?.isDefault ? value : "";
 }
+
+/** Suggested speed; an explicit normal selection (empty string) is preserved. */
+export function suggestedSpeed(provider: string, remembered?: string): string {
+  return remembered ?? (provider === "codex" ? FAST_SPEED : "");
+}

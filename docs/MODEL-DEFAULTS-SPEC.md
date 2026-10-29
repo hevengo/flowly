@@ -34,3 +34,7 @@ A project default replaces the global one as a whole (provider, model and reason
 ## 5. Acceptance
 
 [verification/model-defaults.md](verification/model-defaults.md)
+
+## Automatic approval default (2026-10-29)
+
+New card/session pickers suggest Claude `auto` and Codex `auto-review` when no explicit or remembered permission mode is set. Applies on initial selection, reset and provider switch. Explicit model defaults and remembered selections win. Unsupported modes fall back to the provider default. Existing sessions are unchanged.

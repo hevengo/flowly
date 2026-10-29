@@ -1,3 +1,4 @@
+import { suggestedSpeed } from "./agent-speed";
 import { z } from "zod";
 
 /** A provider + model (+ optional reasoning effort) a new session starts with (MODEL-DEFAULTS-SPEC). */
@@ -36,9 +37,9 @@ export function startingAgent(last: LastSession, chosen: AgentModel | null | und
   return {
     provider: chosen.provider,
     model: chosen.model,
-    mode: chosen.mode ?? (sameProvider ? last.mode : ""),
+    mode: suggestedMode(chosen.provider, chosen.mode ?? (sameProvider ? last.mode : undefined)),
     thinking: chosen.thinking ?? "",
-    speed: sameProvider ? last.speed ?? "" : "",
+    speed: suggestedSpeed(chosen.provider, sameProvider ? last.speed : undefined),
   };
 }
 
@@ -51,4 +52,9 @@ export function agentModelFromValues(values: { defaultProvider?: string; default
     ...(values.defaultThinking ? { thinking: values.defaultThinking } : {}),
     ...(values.defaultMode ? { mode: values.defaultMode } : {}),
   };
+}
+
+/** Automatic approval suggestion; explicit and remembered modes win. */
+export function suggestedMode(provider: string, remembered?: string): string {
+  return remembered || (provider === "claude" ? "auto" : provider === "codex" ? "auto-review" : "");
 }

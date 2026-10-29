@@ -1042,3 +1042,11 @@ Phase 2 spec: [PHASE-02-SPEC.md](PHASE-02-SPEC.md). Three current-card tools; au
 - 根因：Paseo 0.13 的 `publishAgentStream` 对 turn_completed/failed/canceled 一律发 `timeline: []`（SDK 类型仍声明该字段，所以编译无报错）。`SummaryService.enqueue` 对空文本直接返回，无错误记录。同一个空数组还影响 `byUser`/`pick`（Agent habits）、记忆线索、workpad 计划、外部会话 insights。
 - 修复：`server/turn-timeline.ts` 在空时读 timeline 最新一页的最后一轮，`agent.turn_ended` 入口统一使用；`agent.turn_ended` 的 `byUser` 在 10-26 起的事件里被记成 false，未回填。
 
+
+
+## Codex suggested speed — 2026-10-29
+
+- Codex card-session suggestions now use Fast when no speed is remembered, including provider switches. Explicit Normal and other remembered tiers remain intact; unavailable tiers retain the existing normal fallback.
+- No tour/tip or telemetry change: this adjusts the existing Speed control default, adding no capability, switch or counted action.
+
+- Claude defaults to `auto` and Codex to `auto-review` when no permission mode is set; explicit and remembered modes win.

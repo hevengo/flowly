@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sessionSpeed, speedFeature, speedFeatureValues } from "./agent-speed";
+import { suggestedSpeed, sessionSpeed, speedFeature, speedFeatureValues } from "./agent-speed";
 
 // Shapes as the Paseo daemon builds them (Codex `buildCodexSpeedFeature`, Claude `CLAUDE_FAST_MODE_FEATURE`).
 const codexSpeed = (value: string | null = "default") => ({
@@ -67,4 +67,11 @@ describe("sessionSpeed", () => {
     expect(sessionSpeed([claudeFast(false)])).toBe("");
     expect(sessionSpeed(null)).toBe("");
   });
+});
+
+it("defaults Codex to fast while preserving explicit normal and other tiers", () => {
+  expect(suggestedSpeed("codex")).toBe("fast");
+  expect(suggestedSpeed("codex", "")).toBe("");
+  expect(suggestedSpeed("codex", "flex")).toBe("flex");
+  expect(suggestedSpeed("claude")).toBe("");
 });
