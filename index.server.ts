@@ -291,6 +291,12 @@ export default function contribute(host: PluginServerContext) {
     const state = await ideasPrefs.read().catch(() => null);
     return ideasSettingsValues(state?.status === "ready" ? state.values : {}).artifacts;
   };
+  // Agents create and edit cards through the New card path, sharing its queue (AGENT-CARDS-SPEC).
+  tools.cards.board = service;
+  tools.cards.on = async () => {
+    const state = await ideasPrefs.read().catch(() => null);
+    return ideasSettingsValues(state?.status === "ready" ? state.values : {}).agentCards;
+  };
   // Search (SEARCH-SPEC): a scan of the board, the latest summaries and project memory.
   const search = new SearchService({
     board: () => store.read(),
@@ -739,6 +745,18 @@ export default function contribute(host: PluginServerContext) {
         };
     } catch (e) {
       logFailure("Kanban session CLI unavailable:", e);
+    }
+    // Sessions outside cards get the project's card tools over MCP, on hosts whose hook takes
+    // mcpServers; the pinned SDK types predate these fields (AGENT-CARDS-SPEC §2.2).
+    const open = request as typeof request & { labels?: Record<string, string>; mcpServers?: Record<string, unknown> };
+    if (!open.mcpServers) return;
+    try {
+      const mcp = await tools.boardServer(open, paseo);
+      if (!mcp) return;
+      const next = { ...request, mcpServers: { ...open.mcpServers, "flowly-board": mcp } };
+      return next;
+    } catch (e) {
+      logFailure("Flowly card tools not added to a session:", e);
     }
   });
   return () => {

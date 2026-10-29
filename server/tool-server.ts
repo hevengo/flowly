@@ -34,6 +34,14 @@ import {
   tagsInputSchema,
   typeInputSchema,
   nextMovesInputSchema,
+  listCardsInputSchema,
+  listCardsResultSchema,
+  getCardInputSchema,
+  getCardResultSchema,
+  createCardInputSchema,
+  createCardResultSchema,
+  updateCardInputSchema,
+  updateCardResultSchema,
   workpadInputSchema,
   progressInputSchema,
   statusInputSchema,
@@ -43,6 +51,7 @@ import {
   type ToolPreparation,
 } from "../shared/tools";
 import { AgentService } from "./agent-service";
+import { AgentCards, type CardCaller } from "./agent-cards";
 import { BoardStore } from "./store";
 import { BoardService } from "./service";
 import { ToolSecrets, writePrivate } from "./tool-context";
@@ -53,9 +62,29 @@ import { logFailure } from "./error-report";
 
 const maxBody = 262144;
 
+/** A tool's value, or its failure as an MCP tool error. */
+const wrap = async (operation: () => Promise<object>) => {
+  try {
+    const value = await operation();
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(value) }],
+      structuredContent: value as Record<string, unknown>,
+    };
+  } catch (e) {
+    return {
+      isError: true,
+      content: [
+        { type: "text" as const, text: JSON.stringify(toolFailure(e)) },
+      ],
+      structuredContent: { error: toolFailure(e) },
+    };
+  }
+};
+
 export class ToolServer {
   readonly secrets: ToolSecrets;
   readonly agents: AgentService;
+  readonly cards: AgentCards;
   private server?: Server;
   private handler?: McpHttpHandler;
   private starting?: Promise<void>;
@@ -66,9 +95,11 @@ export class ToolServer {
   constructor(readonly store: BoardStore) {
     this.secrets = new ToolSecrets(store.directory);
     this.agents = new AgentService(store, this.secrets);
+    this.cards = new AgentCards(store);
   }
   attach(paseo: PaseoApi) {
     this.agents.attach(paseo);
+    this.cards.attach(paseo);
   }
   private async taskIds() {
     return new Set((await this.store.read()).tasks.map((t) => t.id));
@@ -120,7 +151,55 @@ export class ToolServer {
   private token(value: string | undefined) {
     if (!value?.startsWith("Bearer "))
       throw new ToolError("UNAUTHORIZED", "Missing Kanban session credential.");
-    return this.secrets.authenticate(value.slice(7));
+    return this.secrets.authenticateAny(value.slice(7));
+  }
+  /** The four card tools (AGENT-CARDS-SPEC §3), for card sessions and sessions outside cards alike. */
+  private registerCardTools(mcp: McpServer, caller: () => Promise<CardCaller>) {
+    const run = (operation: (c: CardCaller) => Promise<object>) => wrap(async () => operation(await caller()));
+    mcp.registerTool(
+      "flowly_list_cards",
+      {
+        description:
+          "List the cards of this Flowly project with their lane, priority, type, tags and revision (descriptions cut to 300 characters; read one in full with flowly_get_card). Filter by words (query) and lanes (status). Read-only.",
+        inputSchema: listCardsInputSchema,
+        outputSchema: listCardsResultSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      },
+      (input) => run((c) => this.cards.list(c, input)),
+    );
+    mcp.registerTool(
+      "flowly_get_card",
+      {
+        description:
+          "Read one card of this Flowly project in full: title, description, lane, priority, type, tags, links and revision. Pass its revision to flowly_update_card. editable=false for archived and finished cards. Read-only.",
+        inputSchema: getCardInputSchema,
+        outputSchema: getCardResultSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      },
+      (input) => run((c) => this.cards.get(c, input)),
+    );
+    mcp.registerTool(
+      "flowly_create_card",
+      {
+        description:
+          'Create a card in this Flowly project, only when the user asked you to create cards (for example "split this into cards" or "make a card for X"). Follow-up work the user did not ask for is an idea (flowly_propose_idea in a card session), not a card. The card gets its own new workspace in the project folder and lands in Backlog (default) or Todo; no session starts, the user starts it. Its agent cannot see this conversation: write the description with the goal, context, files and acceptance criteria. From a card session the new card follows up your card. Pass a unique idempotencyKey; retrying with the same key returns the same card (replayed=true). At most 20 cards per session per hour (CARD_LIMIT). AGENT_CARDS_DISABLED: the user turned this off; tell them instead.',
+        inputSchema: createCardInputSchema,
+        outputSchema: createCardResultSchema,
+        annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      },
+      (input) => run((c) => this.cards.create(c, input)),
+    );
+    mcp.registerTool(
+      "flowly_update_card",
+      {
+        description:
+          "Edit a card of this Flowly project, only when the user asked you to: title, description (replaces it), priority, type, tags (addTags; removeTags only for tags an agent added) or its lane between Backlog and Todo. Read it first with flowly_get_card and pass its revision; on REVISION_CONFLICT read it again and keep the other changes. Work stages, In review, Done and Cancelled are not set here (STATUS_FORBIDDEN): a card's own session uses flowly_update_status, and finishing a card is the user's decision. Archived and finished cards are refused. Each edit increments the card's revision and shows in its activity. For your own card's setup keep using flowly_set_type and flowly_set_tags.",
+        inputSchema: updateCardInputSchema,
+        outputSchema: updateCardResultSchema,
+        annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+      },
+      (input) => run((c) => this.cards.update(c, input)),
+    );
   }
   private async initialize() {
     await this.secrets.initialize();
@@ -161,32 +240,22 @@ export class ToolServer {
           `Tool discovery is invalid; preserved at ${discoveryFile}.`,
         );
     }
-    const wrap = async (operation: () => Promise<object>) => {
-      try {
-        const value = await operation();
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(value) }],
-          structuredContent: value as Record<string, unknown>,
-        };
-      } catch (e) {
-        return {
-          isError: true,
-          content: [
-            { type: "text" as const, text: JSON.stringify(toolFailure(e)) },
-          ],
-          structuredContent: { error: toolFailure(e) },
-        };
-      }
-    };
     this.handler = createMcpHandler(
       ({ requestInfo }) => {
-        const identity = this.token(
+        const auth = this.token(
           requestInfo?.headers.get("authorization") || undefined,
         );
         const mcp = new McpServer({
           name: "flowly",
           version: "0.2.0",
         });
+        // A session outside cards gets only the project's card tools (AGENT-CARDS-SPEC §2.2).
+        if (auth.kind === "board") {
+          const board = auth.identity;
+          this.registerCardTools(mcp, () => this.cards.boardCaller(board));
+          return mcp;
+        }
+        const identity = auth.identity;
         mcp.registerTool(
           "flowly_get_task",
           {
@@ -381,6 +450,7 @@ export class ToolServer {
           },
           (input) => wrap(() => this.agents.write(identity, "workpad", input)),
         );
+        this.registerCardTools(mcp, () => this.agents.cardCaller(identity));
         return mcp;
       },
       // A full workpad with multi-byte text can exceed 64 KiB (WORKPAD-SPEC §3).
@@ -400,7 +470,7 @@ export class ToolServer {
             "Tool service is stopping.",
             true,
           );
-        const identity = this.token(
+        const auth = this.token(
           typeof req.headers.authorization === "string"
             ? req.headers.authorization
             : undefined,
@@ -415,7 +485,10 @@ export class ToolServer {
           res.end();
           return;
         }
-        await this.apiRequest(req, res, identity);
+        // The CLI is for card sessions; sessions outside cards use MCP only (AGENT-CARDS-SPEC §1).
+        if (auth.kind !== "card")
+          throw new ToolError("UNAUTHORIZED", "This credential is for MCP only.");
+        await this.apiRequest(req, res, auth.identity);
       })().catch((e) =>
         this.json(
           res,
@@ -466,7 +539,7 @@ export class ToolServer {
     }
     const body = z
       .strictObject({
-        action: z.enum(["get", "status", "progress", "idea", "idea_update", "idea_remove", "remember", "recall", "search", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad", "external", "ticket"]),
+        action: z.enum(["get", "status", "progress", "idea", "idea_update", "idea_remove", "remember", "recall", "search", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad", "external", "ticket", "list_cards", "get_card", "create_card", "update_card"]),
         input: z.unknown(),
       })
       .parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
@@ -480,8 +553,30 @@ export class ToolServer {
             ? await this.agents.recall(identity, recallInputSchema.parse(body.input))
             : body.action === "search"
               ? await this.agents.searchCards(identity, agentSearchInputSchema.parse(body.input))
+            : body.action === "list_cards" || body.action === "get_card" || body.action === "create_card" || body.action === "update_card"
+              ? await this.cardAction(identity, body.action, body.input)
             : await this.agents.write(identity, body.action, body.input);
     this.json(res, { ok: true, result: value });
+  }
+  /** A card tool over the CLI (AGENT-CARDS-SPEC §5). */
+  private async cardAction(identity: ToolIdentity, action: "list_cards" | "get_card" | "create_card" | "update_card", input: unknown) {
+    const caller = await this.agents.cardCaller(identity);
+    if (action === "list_cards") return this.cards.list(caller, input);
+    if (action === "get_card") return this.cards.get(caller, input);
+    if (action === "create_card") return this.cards.create(caller, input);
+    return this.cards.update(caller, input);
+  }
+  /** The project's card tools for a session outside cards, or null (AGENT-CARDS-SPEC §2.2). */
+  async boardServer(request: { agentId: string; workspaceId: string | null; labels?: Record<string, string> }, paseo: PaseoApi) {
+    this.attach(paseo);
+    const identity = await this.cards.boardSession(request, await this.secrets.hasContext(request.agentId));
+    if (!identity) return null;
+    await this.start();
+    return {
+      type: "http" as const,
+      url: `${this.url}mcp`,
+      headers: { Authorization: `Bearer ${this.secrets.boardCredential(identity)}` },
+    };
   }
   private async prepare(
     identity: ToolIdentity,

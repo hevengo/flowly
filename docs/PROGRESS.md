@@ -1,5 +1,13 @@
 # Implementation progress
 
+## Agent card tools (card "create cards via ai agent") — 2026-10-29
+
+- New MCP tools `flowly_list_cards`, `flowly_get_card`, `flowly_create_card`, `flowly_update_card` (`server/agent-cards.ts`), also as CLI commands `cards`, `card`, `create-card`, `update-card` and HTTP API actions. User decisions D1–D4: create or edit only when the user asks (amends IDEAS-SPEC §1); edit any live card of the project; a new card gets a directory workspace in Backlog/Todo and no session; any Paseo session in a Flowly project's workspaces may call them. [AGENT-CARDS-SPEC](AGENT-CARDS-SPEC.md)
+- Creation goes through `BoardService.createTask` with `by: { agentId }`: `created` event and tags are attributed to the agent; from a card session the new card follows up the source card (`derived`, `createdBy: system`) and the source card gets `card_created`. Idempotent per `idempotencyKey`; at most 20 creations per session per hour (in memory).
+- Sessions outside cards: `agent.session_open` adds a `flowly-board` MCP server with an HMAC-sealed board credential (`{ agentId, workspaceId, projectId }`, purpose `board`) when the host's request has `mcpServers` (Paseo 0.14; the pinned 0.11.2 SDK types lack it, so it is feature-detected). Each call re-checks the session, workspace and project. The CLI stays card-only.
+- Settings → AI features → Cards: *Agents create and edit cards* (`ideas.agentCards`, default on). Five new strings in all catalogs (switch title and detail, *Created a card*, the More features entry). Onboarding: one More features line, no tip. Telemetry: no heartbeat field (telemetry is off in this fork). Skill text (server and `skills/flowly/SKILL.md`) says when to create cards vs. propose ideas.
+- Checks: `npm run typecheck` and `npm test` passed on the shared working tree (uncommitted). Live on Paseo 0.14 in the paseo-playground project: a session outside cards got the `flowly-board` server and created, replayed and edited a card with full agent attribution; a stale revision was refused. Not run live: the `STATUS_FORBIDDEN` refusal (unit-tested). Fixture removed afterwards. [verification](verification/agent-cards.md)
+
 ## Committed stage (card "commited stage") — 2026-10-29
 
 - New built-in status `committed` (*Committed*, `GitCommitHorizontal`, success colour) after In review. `deliveryStatuses`/`isDeliveryStatus` in `shared/model.ts` replace the `=== "in_review"` delivery checks in the agent write path (outputs, Move to Done, workpad/setup gate, HEAD stamp), reminders, the workpad delivery mark, agent habits and the memory feedback clue. Rules A1/A1r treat Committed like In review. Review rounds skip In review → Committed. [COMMITTED-STAGE-SPEC](COMMITTED-STAGE-SPEC.md)

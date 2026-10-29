@@ -230,6 +230,11 @@ export class AgentService {
       );
     return this.paseo;
   }
+  /** The card session's project for the card tools, checked like every other tool call (AGENT-CARDS-SPEC §2.1). */
+  async cardCaller(identity: ToolIdentity) {
+    const r = await this.resources(identity);
+    return { agentId: identity.agentId, projectId: r.project.id, taskId: r.task.id };
+  }
   private async resources(identity: ToolIdentity) {
     const paseo = this.api();
     const actor = await paseo.agents.ref(identity.agentId).refresh();

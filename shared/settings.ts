@@ -125,6 +125,8 @@ export const ideasSettings = defineSettings({
     ideas: z.boolean().default(true),
     /** Agents may record card artifacts (CARD-ARTIFACTS-SPEC §4.3). */
     artifacts: z.boolean().default(true),
+    /** Agents may create and edit cards, and sessions outside cards get those tools (AGENT-CARDS-SPEC §2.3). */
+    agentCards: z.boolean().default(true),
   }),
 });
 export type IdeasSettings = z.infer<typeof ideasSettings.schema>;

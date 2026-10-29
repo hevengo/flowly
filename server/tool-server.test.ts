@@ -93,6 +93,10 @@ test("MCP initialize/list can precede actor creation; live calls require SDK con
     "flowly_set_type",
     "flowly_suggest_next_moves",
     "flowly_update_workpad",
+    "flowly_list_cards",
+    "flowly_get_card",
+    "flowly_create_card",
+    "flowly_update_card",
   ]);
   // The soft delivery gate and the workpad's own revision are part of the tool schemas (WORKPAD-SPEC §3, §5.3).
   const listed = (await mcp("tools/list", {})).result.tools as { name: string; description: string; inputSchema: { properties: Record<string, unknown> } }[];
@@ -628,4 +632,74 @@ test("session_open injection is limited to Kanban-managed sessions", async () =>
   const path = await x.server.sessionContext(x.identity.agentId, x.identity.workspaceId, x.paseo);
   expect(path).toBe(x.server.secrets.contextFile(x.identity.agentId));
   expect(JSON.parse(await readFile(path!, "utf8")).methods).toEqual(["mcp", "cli"]);
+});
+test("sessions outside cards: a board credential reaches only the card tools, over MCP only (AGENT-CARDS-SPEC §2.2)", async () => {
+  const x = await setup();
+  x.server.attach(x.paseo);
+  // Only a session whose workspace belongs to the Flowly project's native project gets the server.
+  expect(await x.server.boardServer({ agentId: "second", workspaceId: "w" }, x.paseo)).toBeNull();
+  x.setWorkspace({ ...x.workspace(), projectId: "native" });
+  const config = (await x.server.boardServer({ agentId: "second", workspaceId: "w" }, x.paseo))!;
+  expect(config).toMatchObject({ type: "http", url: x.url + "mcp" });
+  // A card session already has the tools on its own server.
+  await x.server.secrets.writeContext(x.identity, "mcp");
+  expect(await x.server.boardServer({ agentId: "actor", workspaceId: "w" }, x.paseo)).toBeNull();
+  const mcp = async (method: string, params: unknown) => {
+    const response = await fetch(x.url + "mcp", {
+      method: "POST",
+      headers: { ...config.headers, "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    });
+    const body = await response.text();
+    return JSON.parse(
+      response.headers.get("content-type")?.includes("text/event-stream")
+        ? body.split("\n").filter((line) => line.startsWith("data: ")).map((line) => line.slice(6)).at(-1)!
+        : body,
+    );
+  };
+  await mcp("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } });
+  expect((await mcp("tools/list", {})).result.tools.map((t: { name: string }) => t.name)).toEqual([
+    "flowly_list_cards",
+    "flowly_get_card",
+    "flowly_create_card",
+    "flowly_update_card",
+  ]);
+  const listed = await mcp("tools/call", { name: "flowly_list_cards", arguments: {} });
+  expect(listed.result.structuredContent.cards.map((c: { taskId: string }) => c.taskId)).toEqual(["t"]);
+  const updated = await mcp("tools/call", { name: "flowly_update_card", arguments: { taskId: "t", revision: 1, title: "Renamed by an outside session" } });
+  expect(updated.result.structuredContent).toMatchObject({ changed: ["title"], card: { revision: 2 } });
+  expect((await x.store.read()).events.at(-1)).toMatchObject({ actor: "agent", agentId: "second", action: "edited" });
+  const card = await mcp("tools/call", { name: "flowly_get_task", arguments: {} });
+  expect(card.result?.isError ?? !!card.error).toBe(true);
+  // The CLI endpoint takes card credentials only.
+  const api = await fetch(x.url + "api", {
+    method: "POST",
+    headers: { ...config.headers, "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "list_cards", input: {} }),
+  });
+  expect(api.status).toBe(401);
+  // A card credential is never read as a board one, and a tampered board credential is refused.
+  expect(x.server.secrets.authenticateAny(x.authorization.slice(7)).kind).toBe("card");
+  expect(() => x.server.secrets.authenticateAny(config.headers.Authorization.slice(7) + "x")).toThrow();
+});
+test("card sessions reach the card tools over the CLI (AGENT-CARDS-SPEC §5)", async () => {
+  const x = await setup();
+  x.server.attach(x.paseo);
+  const prepared = await x.server.prepareExisting("t", "actor", x.paseo);
+  const cli = async (...args: string[]) =>
+    JSON.parse(
+      (
+        await run(process.execPath, [prepared.cliPath, "--context-file", prepared.contextFile, ...args], {
+          env: { ...process.env, PASEO_AGENT_ID: "actor" },
+        })
+      ).stdout,
+    );
+  expect((await cli("cards")).cards.map((c: { taskId: string }) => c.taskId)).toEqual(["t"]);
+  expect((await cli("cards", "--input", JSON.stringify({ status: ["backlog"] }))).cards).toEqual([]);
+  expect((await cli("card", "--id", "t")).card).toMatchObject({ taskId: "t", revision: 1 });
+  const updated = await cli("update-card", "--input", JSON.stringify({ taskId: "t", revision: 1, priority: "high" }));
+  expect(updated).toMatchObject({ changed: ["priority"], card: { priority: "high", revision: 2 } });
+  await expect(cli("update-card")).rejects.toMatchObject({ stderr: expect.stringContaining("update-card requires --input") });
+  await expect(cli("card", "--id", "t", "--input", "{}")).rejects.toMatchObject({ stderr: expect.stringContaining("--input is only valid") });
+  expect((await x.api("get_card", { taskId: "t" })).result.card.priority).toBe("high");
 });

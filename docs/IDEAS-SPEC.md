@@ -15,6 +15,8 @@ Ideas 让 agent 把它们作为结构化建议挂到来源卡上。用户觉得�
 
 idea 不是任务卡：不进泳道、不占 workspace、不改来源卡状态或 task revision。只有用户点 **Good idea** 并选择一条路才会发生动作；agent 永远不自行建卡或派活（v1 不做自动分配）。
 
+Amended 2026-10-29 (user decision, [AGENT-CARDS-SPEC](AGENT-CARDS-SPEC.md) D1): an agent may create or edit cards with `flowly_create_card` / `flowly_update_card` when the user asks it to in the session. Follow-up work the user did not ask for is still an idea, and an idea still becomes a card only through the user. No session is started on an agent-created card.
+
 ## 2. 数据
 
 ### 2.1 Idea

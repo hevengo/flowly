@@ -412,6 +412,15 @@ export function AiPage() {
           onChange={(value) => ideas.save({ artifacts: value })}
         />
       </SettingsGroup>
+      <SettingsGroup title={t("Cards")}>
+        <SettingSwitch
+          title={t("Agents create and edit cards")}
+          detail={t("Only when you ask. Sessions in a project's folders that are not on a card get these tools too.")}
+          value={ideas.values?.agentCards ?? true}
+          disabled={ideas.busy}
+          onChange={(agentCards) => ideas.save({ agentCards })}
+        />
+      </SettingsGroup>
     </SettingsPage>
   );
 }

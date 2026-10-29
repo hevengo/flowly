@@ -455,9 +455,10 @@ export class BoardService {
   /**
    * A suggestion is checked before any workspace exists and marked accepted once
    * the card is written; the two live in different files, so a failed accept
-   * leaves the card and the suggestion open (logged).
+   * leaves the card and the suggestion open (logged). `by`: an agent creates
+   * the card (AGENT-CARDS-SPEC §3.3); its activity, tags and follow-up link say so.
    */
-  async createTask(input: TaskInput, paseo: PaseoApi) {
+  async createTask(input: TaskInput, paseo: PaseoApi, by?: { agentId: string }) {
     const findingId = input.insightFindingId;
     if (findingId) {
       if (!this.insightFindings) throw new Error("Workflow insights are unavailable.");
@@ -465,14 +466,14 @@ export class BoardService {
       const board = await this.store.read();
       if (!board.tasks.some((t) => t.operationId === input.operationId)) await this.insightFindings.check(input.projectId, findingId);
     }
-    const task = await this.createCard(input, paseo);
+    const task = await this.createCard(input, paseo, by);
     if (findingId)
       await this.insightFindings!.accept(input.projectId, findingId, task.id).catch((e) =>
         logFailure("Workflow insights suggestion not marked accepted:", e),
       );
     return task;
   }
-  private createCard(input: TaskInput, paseo: PaseoApi) {
+  private createCard(input: TaskInput, paseo: PaseoApi, by?: { agentId: string }) {
     return this.serialize(async () => {
       const board = await this.store.read();
       const previous = board.tasks.find(
@@ -591,7 +592,9 @@ export class BoardService {
             status: input.status,
             priority: input.priority,
             ...(input.type ? { type: input.type } : {}),
-            ...(tags.length ? { tags: tags.map((tag) => ({ tag, by: "human" as const, at: now })) } : {}),
+            ...(tags.length
+              ? { tags: tags.map((tag) => (by ? { tag, by: "agent" as const, agentId: by.agentId, at: now } : { tag, by: "human" as const, at: now })) }
+              : {}),
             position: Math.max(
               -1,
               ...current.tasks
@@ -611,13 +614,17 @@ export class BoardService {
           current.tasks.push(task);
           this.store.event(current, {
             taskId: task.id,
-            actor: "human",
+            actor: by ? "agent" : "human",
+            ...(by ? { agentId: by.agentId } : {}),
             action: "created",
           });
           // The new card follows up its source (CARD-LINKS-SPEC §3).
           if (idea)
             addLink(this.store, current, { kind: "derived", from: task.id, to: idea.taskId, ideaId: idea.id, createdBy: "system" }, { events: false, limit: false, archived: true });
-          if (input.followUpOf)
+          if (input.followUpOf && by) {
+            addLink(this.store, current, { kind: "derived", from: task.id, to: input.followUpOf, createdBy: "system" }, { events: false });
+            this.store.event(current, { taskId: input.followUpOf, actor: "agent", agentId: by.agentId, action: "card_created", note: task.title });
+          } else if (input.followUpOf)
             addLink(this.store, current, { kind: "derived", from: task.id, to: input.followUpOf });
           // In the same write, so the first session's context already lists them.
           for (const t of externals)

@@ -9,8 +9,10 @@ import {
 } from "node:crypto";
 import { z } from "zod";
 import {
+  boardIdentitySchema,
   identitySchema,
   revisionSchema,
+  type BoardIdentity,
   type ToolIdentity,
 } from "../shared/tools";
 import { ToolError } from "./tool-error";
@@ -98,6 +100,19 @@ export class ToolSecrets {
   }
   authenticate(token: string) {
     return identitySchema.parse(this.unseal("session", token));
+  }
+  /** A session outside cards: the project's card tools only, never a card credential (AGENT-CARDS-SPEC §2.2). */
+  boardCredential(identity: BoardIdentity) {
+    return this.seal("board", boardIdentitySchema.parse(identity));
+  }
+  /** A card session's or a board session's credential, told apart by its sealed purpose. */
+  authenticateAny(token: string): { kind: "card"; identity: ToolIdentity } | { kind: "board"; identity: BoardIdentity } {
+    try {
+      return { kind: "card", identity: this.authenticate(token) };
+    } catch (e) {
+      if (!(e instanceof ToolError) || e.code !== "UNAUTHORIZED") throw e;
+      return { kind: "board", identity: boardIdentitySchema.parse(this.unseal("board", token)) };
+    }
   }
   request(identity: ToolIdentity, revision: z.infer<typeof revisionSchema>) {
     const issuedAt = new Date(this.now()).toISOString();

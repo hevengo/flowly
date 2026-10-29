@@ -372,6 +372,97 @@ export const identitySchema = z.strictObject({
   workspaceId: z.string().min(1),
 });
 export type ToolIdentity = z.infer<typeof identitySchema>;
+/** A session outside cards with the project's card tools (AGENT-CARDS-SPEC §2.2). */
+export const boardIdentitySchema = z.strictObject({
+  agentId: z.string().min(1),
+  workspaceId: z.string().min(1),
+  projectId: z.string().min(1),
+});
+export type BoardIdentity = z.infer<typeof boardIdentitySchema>;
+/** The lanes flowly_create_card and flowly_update_card may use (AGENT-CARDS-SPEC §3.3-3.4). */
+export const agentCardStatuses = ["backlog", "todo"] as const;
+export const agentCardLimits = { listMax: 200, listDefault: 50, preview: 300, perHour: 20 } as const;
+const cardTagList = z
+  .array(z.string().max(200))
+  .max(tagLimits.perCall)
+  .describe('Lowercase letters, numbers, "-", "." and "/"; at most 32 characters each.');
+export const listCardsInputSchema = z.strictObject({
+  query: z.string().max(200).default("").describe("Words that must all appear in the title, description or tags; empty lists every card."),
+  status: z.array(statusSchema).max(10).optional().describe("Only cards in these lanes (status ids from lanes)."),
+  includeArchived: z.boolean().default(false),
+  limit: z.number().int().min(1).max(agentCardLimits.listMax).default(agentCardLimits.listDefault),
+});
+export const getCardInputSchema = z.strictObject({
+  taskId: z.string().min(1).describe("Card id from flowly_list_cards."),
+});
+export const createCardInputSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(20000).default("").describe("The task as the card's agent will read it: goal, context, files, acceptance."),
+  status: z.enum(agentCardStatuses).optional().describe("Lane for the new card; default Backlog, or Todo when the project has no Backlog lane."),
+  priority: prioritySchema.default("normal"),
+  type: taskTypeSchema.optional(),
+  tags: cardTagList.optional(),
+  idempotencyKey: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe("A unique key you choose for this card, e.g. a slug of its title. Retrying with the same key returns the card already created instead of a second one."),
+});
+export const updateCardInputSchema = z.strictObject({
+  taskId: z.string().min(1).describe("Card id from flowly_list_cards or flowly_get_card."),
+  revision: z.number().int().positive().describe("The card's revision from flowly_list_cards or flowly_get_card."),
+  title: z.string().trim().min(1).max(200).optional(),
+  description: z.string().max(20000).optional().describe("Replaces the whole description."),
+  priority: prioritySchema.optional(),
+  type: taskTypeSchema.optional(),
+  addTags: cardTagList.optional(),
+  removeTags: cardTagList.optional().describe("Only tags an agent added can be removed."),
+  status: z.enum(agentCardStatuses).optional().describe("Move between Backlog and Todo; only for a card that is in one of them."),
+});
+const cardSummarySchema = z.object({
+  taskId: z.string(),
+  title: z.string(),
+  status: statusSchema,
+  laneName: z.string(),
+  priority: prioritySchema,
+  type: taskTypeSchema.optional(),
+  tags: z.array(z.string()),
+  revision: z.number().int(),
+  updatedAt: z.string(),
+  archived: z.boolean(),
+  description: z.string(),
+  descriptionTruncated: z.boolean().optional(),
+});
+export const cardViewSchema = z.object({
+  taskId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  status: statusSchema,
+  laneName: z.string(),
+  priority: prioritySchema,
+  type: taskTypeSchema.optional(),
+  tags: z.array(z.object({ tag: z.string(), by: z.enum(["human", "agent"]) })),
+  revision: z.number().int(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  archived: z.boolean(),
+  workspaceId: z.string(),
+  links: z.array(z.object({ relation: z.enum(relations), taskId: z.string(), title: z.string(), status: statusSchema })),
+});
+export const listCardsResultSchema = z.object({
+  project: z.object({ id: z.string(), title: z.string() }),
+  lanes: z.array(z.object({ status: statusSchema, name: z.string() })),
+  cards: z.array(cardSummarySchema),
+  truncated: z.boolean(),
+});
+export const getCardResultSchema = z.object({ card: cardViewSchema, editable: z.boolean(), reason: z.string() });
+export const createCardResultSchema = z.object({ card: cardViewSchema, replayed: z.boolean() });
+export const updateCardResultSchema = z.object({ card: cardViewSchema, changed: z.array(z.string()) });
+export type CardView = z.infer<typeof cardViewSchema>;
+export type ListCardsInput = z.input<typeof listCardsInputSchema>;
+export type CreateCardInput = z.input<typeof createCardInputSchema>;
+export type UpdateCardInput = z.input<typeof updateCardInputSchema>;
 export const toolContextSchema = z.object({
   identity: identitySchema,
   /** Latest action checklist, including for sessions created with an older skill. Optional for older servers. */

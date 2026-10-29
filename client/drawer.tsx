@@ -1328,6 +1328,7 @@ const activityText: Record<string, string> = localizedLabels({
   progress_reported: msg("Reported progress"),
   idea_edited: msg("Edited the idea"),
   idea_removed: msg("Removed the idea"),
+  card_created: msg("Created a card"),
   "agent.turn_started": msg("Started a turn"),
   "agent.turn_ended": msg("Finished a turn"),
 });
