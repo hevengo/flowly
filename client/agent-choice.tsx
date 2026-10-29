@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { usePaseo } from "@getpaseo/plugin/client";
 import { useQuery } from "@tanstack/react-query";
@@ -6,20 +6,23 @@ import { Label, font, space } from "./ui";
 import { PickerGroup, PickerRow } from "./picker";
 import { modelOptions, providerOptions } from "./options";
 import { t } from "../shared/i18n";
+import { speedFeature, speedFeatureValues } from "../shared/agent-speed";
 
-export type AgentDefaults = { provider: string; model: string; mode: string; thinking?: string } | null | undefined;
+export type AgentDefaults = { provider: string; model: string; mode: string; thinking?: string; speed?: string } | null | undefined;
 
 /**
- * Provider / model / permission choice shared by "New session" and "New task
- * → Start an agent now". Remembered defaults fall back to the provider's
- * defaults when no longer offered. `cwd` scopes model/mode discovery.
+ * Provider / model / reasoning / speed / permission choice shared by "New
+ * session" and "New task → Start an agent now". Remembered defaults fall back
+ * to the provider's defaults when no longer offered. `cwd` scopes model/mode
+ * discovery.
  */
 export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; cwd?: string; defaults: AgentDefaults }) {
   const paseo = usePaseo();
   const [provider, setProviderState] = useState(defaults?.provider || "codex"),
     [model, setModel] = useState(defaults?.model || ""),
     [mode, setMode] = useState(defaults?.mode || ""),
-    [thinking, setThinking] = useState(defaults?.thinking || "");
+    [thinking, setThinking] = useState(defaults?.thinking || ""),
+    [speed, setSpeed] = useState(defaults?.speed || "");
   const providers = useQuery({
     queryKey: ["flowly", "providers"],
     queryFn: () => paseo.providers.listAvailable(),
@@ -57,6 +60,7 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
       setModel("");
       setMode("");
       setThinking("");
+      setSpeed("");
     }
   }, [providers.data, provider]);
   const selectable = (models.data?.models || []).filter((m) => m.isSelectable !== false);
@@ -71,6 +75,19 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
   const chosenThinking = thinking && thinkingOptions.some((t) => t.id === thinking) ? thinking : "";
   const chosenMode =
     mode && (!modes.isSuccess || modes.data?.modes?.some((m) => m.id === mode)) ? mode : "";
+  // Speed: a provider feature of the chosen model (AGENT-SPEED-SPEC); "" is the provider's normal speed.
+  const features = useQuery({
+    queryKey: ["flowly", "features", provider, chosenModel, cwd],
+    queryFn: async () => {
+      const result = await paseo.providers.listFeatures({ provider: `${provider}/${chosenModel}`, cwd: cwd! });
+      if (result.error) throw new Error(result.error);
+      return result;
+    },
+    enabled: enabled && !!cwd && !!chosenModel,
+    staleTime: 300000,
+  });
+  const speedChoice = useMemo(() => speedFeature(features.data?.features), [features.data]);
+  const chosenSpeed = speed && speedChoice?.options.some((o) => o.id === speed) ? speed : "";
   const providerAvailable = !!providers.data?.providers.some((p) => p.available && p.provider === provider);
   return {
     provider,
@@ -80,40 +97,50 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
       setModel("");
       setMode("");
       setThinking("");
+      setSpeed("");
     },
     setModel,
     setMode,
     setThinking,
+    setSpeed,
     reset(next: AgentDefaults) {
       setProviderState(next?.provider || "codex");
       setModel(next?.model || "");
       setMode(next?.mode || "");
       setThinking(next?.thinking || "");
+      setSpeed(next?.speed || "");
     },
     chosenModel,
     chosenMode,
     chosenThinking,
+    chosenSpeed,
     thinkingOptions,
     defaultThinking,
+    speedChoice,
+    /** `featureValues` of the new session: the chosen speed, or undefined for normal speed. */
+    featureValues: speedFeatureValues(speedChoice, chosenSpeed),
     providers,
     providerInfo,
     models,
     modes,
-    /** A model and provider are selectable and modes did not fail. */
+    features,
+    /** A model and provider are selectable, modes did not fail, and a remembered speed is not still being checked. */
     ready:
       models.isSuccess &&
       !!chosenModel &&
       providerAvailable &&
-      (!chosenMode || !modes.isError),
+      (!chosenMode || !modes.isError) &&
+      (!speed || !features.isPending),
     providerAvailable,
   };
 }
 export type AgentChoice = ReturnType<typeof useAgentChoice>;
 
 export function AgentPicker({ choice, disabled = false }: { choice: AgentChoice; disabled?: boolean }) {
-  const [picker, setPicker] = useState<"provider" | "model" | "thinking" | "mode" | null>(null);
-  const toggle = (next: "provider" | "model" | "thinking" | "mode") => setPicker(picker === next ? null : next);
+  const [picker, setPicker] = useState<"provider" | "model" | "thinking" | "speed" | "mode" | null>(null);
+  const toggle = (next: "provider" | "model" | "thinking" | "speed" | "mode") => setPicker(picker === next ? null : next);
   const defaultLabel = choice.thinkingOptions.find((t) => t.id === choice.defaultThinking)?.label;
+  const normalSpeed = choice.speedChoice?.normalLabel || t("Standard");
   return (
     <View style={{ gap: space[1.5] }}>
       <Label medium size={font.sm} muted>
@@ -166,6 +193,26 @@ export function AgentPicker({ choice, disabled = false }: { choice: AgentChoice;
             onToggle={() => toggle("thinking")}
             onChange={(t) => {
               choice.setThinking(t);
+              setPicker(null);
+            }}
+          />
+        )}
+        {choice.speedChoice && (
+          <PickerRow
+            title={t("Speed")}
+            icon="Zap"
+            open={picker === "speed"}
+            disabled={disabled}
+            loading={false}
+            value={choice.chosenSpeed}
+            placeholder={normalSpeed}
+            options={[
+              { value: "", label: normalSpeed },
+              ...choice.speedChoice.options.map((o) => ({ value: o.id, label: o.label, detail: o.description })),
+            ]}
+            onToggle={() => toggle("speed")}
+            onChange={(s) => {
+              choice.setSpeed(s);
               setPicker(null);
             }}
           />

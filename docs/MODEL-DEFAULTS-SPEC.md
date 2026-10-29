@@ -29,6 +29,7 @@ A project default replaces the global one as a whole (provider, model and reason
 - **Project settings → Default model**: the same three rows; the provider's first choice reads **Global default (…)** (the current global one, or Automatic) and means "no override".
 - A **Permissions** row (the provider's modes; "Same as latest session" keeps none: the form then keeps the latest session's mode when it uses the same provider, else the provider default) follows Reasoning; changing the provider clears it, since mode ids belong to a provider.
 - The Reasoning row only appears when the model offers options; "Model default" keeps the model's own.
+- A default model has no speed. The session form keeps the latest session's speed when the default uses the same provider ([AGENT-SPEED-SPEC](AGENT-SPEED-SPEC.md)).
 
 ## 5. Acceptance
 

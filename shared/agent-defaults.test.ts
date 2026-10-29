@@ -22,9 +22,13 @@ describe("startingAgent", () => {
     expect(startingAgent(null, null)).toBeNull();
   });
   it("replaces provider, model and reasoning; keeps the mode only for the same provider", () => {
-    expect(startingAgent(last, claude)).toEqual({ provider: "claude", model: "claude-sonnet-5-5", mode: "plan", thinking: "high" });
-    expect(startingAgent(last, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "" });
-    expect(startingAgent(null, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "" });
+    expect(startingAgent(last, claude)).toEqual({ provider: "claude", model: "claude-sonnet-5-5", mode: "plan", thinking: "high", speed: "" });
+    expect(startingAgent(last, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "", speed: "" });
+    expect(startingAgent(null, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "", speed: "" });
+  });
+  it("keeps the latest session's speed only for the same provider", () => {
+    expect(startingAgent({ ...last, speed: "fast" }, claude)?.speed).toBe("fast");
+    expect(startingAgent({ ...last, speed: "fast" }, codex)?.speed).toBe("");
   });
   it("uses the default's own permission mode over the latest session's", () => {
     expect(startingAgent(last, { ...claude, mode: "acceptEdits" })?.mode).toBe("acceptEdits");

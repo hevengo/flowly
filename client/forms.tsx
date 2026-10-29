@@ -573,6 +573,7 @@ export function TaskForm({
           model: choice.chosenModel,
           mode: choice.chosenMode,
           thinking: choice.chosenThinking,
+          ...(choice.featureValues ? { featureValues: choice.featureValues } : {}),
           prompt: prompt.trim(),
           ...(attachments.attachments.length ? { images: attachments.images(), clientMessageId: firstMessageId } : {}),
           operationId: `first-session-${operationId}`,

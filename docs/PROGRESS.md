@@ -1,5 +1,11 @@
 # Implementation progress
 
+## Agent speed (card "speed settings for agents") — 2026-10-29
+
+- The agent picker (New session, New task → Start an agent now) has a **Speed** row when the chosen model offers one: Paseo's provider features `service_tier` (Codex select) and `fast_mode` (Claude toggle, Opus), read with `providers.listFeatures` and sent as `featureValues` at creation; normal speed sends nothing. The latest session's speed is the starting point for the same provider. [AGENT-SPEED-SPEC](AGENT-SPEED-SPEC.md)
+- Not covered: changing a running session's speed (no SDK or CLI call) and a speed in default models.
+- Two new strings (*Speed*, *Standard*) in all catalogs. Onboarding: no tour copy or tip; the row explains itself where it appears and only for models that offer it. Telemetry: no heartbeat field.
+
 ## Agent card tools (card "create cards via ai agent") — 2026-10-29
 
 - New MCP tools `flowly_list_cards`, `flowly_get_card`, `flowly_create_card`, `flowly_update_card` (`server/agent-cards.ts`), also as CLI commands `cards`, `card`, `create-card`, `update-card` and HTTP API actions. User decisions D1–D4: create or edit only when the user asks (amends IDEAS-SPEC §1); edit any live card of the project; a new card gets a directory workspace in Backlog/Todo and no session; any Paseo session in a Flowly project's workspaces may call them. [AGENT-CARDS-SPEC](AGENT-CARDS-SPEC.md)

@@ -106,6 +106,7 @@ export function SessionCreate({
         chosen,
         chosenMode,
         choice.chosenThinking,
+        choice.chosenSpeed,
         newTitle,
         newPrompt,
         ordinary,
@@ -161,6 +162,7 @@ export function SessionCreate({
             : {}),
           ...(chosenMode ? { modeId: chosenMode } : {}),
           ...(choice.chosenThinking ? { thinkingOptionId: choice.chosenThinking } : {}),
+          ...(choice.featureValues ? { featureValues: choice.featureValues } : {}),
         },
         ...(preparation
           ? {

@@ -1,6 +1,7 @@
 import type { Project, Task, BoardEvent } from "./model";
 import { openQuestion, silentTurn } from "./progress";
 import { pendingRequests } from "./permission-question";
+import { sessionSpeed, type ProviderFeature } from "./agent-speed";
 import { isDismissed, sessionSignalKeys, type AttentionDismissal } from "./attention-dismiss";
 import {
   sessionAttentionFromTurn,
@@ -157,7 +158,7 @@ export function attentionOpenToken(params: Record<string, string> | undefined): 
   return params?.view === "attention" && params.open ? params.open : null;
 }
 
-/** Provider/model/mode of the most recently created session in any card workspace. */
+/** Provider/model/mode/reasoning/speed of the most recently created session in any card workspace. */
 export function lastSessionSettings(
   agents: readonly {
     workspaceId?: string | null;
@@ -167,6 +168,7 @@ export function lastSessionSettings(
     model: string | null;
     currentModeId?: string | null;
     thinkingOptionId?: string | null;
+    features?: readonly ProviderFeature[] | null;
   }[],
   workspaceIds: ReadonlySet<string>,
 ) {
@@ -174,6 +176,12 @@ export function lastSessionSettings(
     .filter((a) => !a.archivedAt && !!a.workspaceId && workspaceIds.has(a.workspaceId))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   return latest
-    ? { provider: latest.provider, model: latest.model || "", mode: latest.currentModeId || "", thinking: latest.thinkingOptionId || "" }
+    ? {
+        provider: latest.provider,
+        model: latest.model || "",
+        mode: latest.currentModeId || "",
+        thinking: latest.thinkingOptionId || "",
+        speed: sessionSpeed(latest.features),
+      }
     : null;
 }

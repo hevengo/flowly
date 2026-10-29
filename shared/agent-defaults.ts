@@ -23,20 +23,22 @@ export function effectiveAgentModel(project: WithAgentModel, global: AgentModel 
   return null;
 }
 
-type LastSession = { provider: string; model: string; mode: string; thinking?: string } | null | undefined;
+type LastSession = { provider: string; model: string; mode: string; thinking?: string; speed?: string } | null | undefined;
 
 /**
  * Starting point of the session form: the chosen default replaces provider,
- * model and reasoning of the latest session; the permission mode is only kept
- * when it belongs to the same provider.
+ * model and reasoning of the latest session; the permission mode and the speed
+ * (AGENT-SPEED-SPEC) are only kept when they belong to the same provider.
  */
 export function startingAgent(last: LastSession, chosen: AgentModel | null | undefined) {
   if (!chosen) return last ?? null;
+  const sameProvider = !!last && last.provider === chosen.provider;
   return {
     provider: chosen.provider,
     model: chosen.model,
-    mode: chosen.mode ?? (last && last.provider === chosen.provider ? last.mode : ""),
+    mode: chosen.mode ?? (sameProvider ? last.mode : ""),
     thinking: chosen.thinking ?? "",
+    speed: sameProvider ? last.speed ?? "" : "",
   };
 }
 

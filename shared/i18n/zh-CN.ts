@@ -48,6 +48,8 @@ const catalog: Catalog = {
   "Model": "模型",
   "Choose a model": "选择模型",
   "Reasoning": "推理强度",
+  "Speed": "速度",
+  "Standard": "标准",
   "Model default ({defaultLabel})": "模型默认（{defaultLabel}）",
   "Model default": "模型默认",
   "Use the model's default reasoning effort": "使用模型默认的推理强度",

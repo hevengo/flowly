@@ -48,6 +48,8 @@ const catalog: Catalog = {
   "Model": "Modèle",
   "Choose a model": "Choisir un modèle",
   "Reasoning": "Raisonnement",
+  "Speed": "Vitesse",
+  "Standard": "Standard",
   "Model default ({defaultLabel})": "Par défaut du modèle ({defaultLabel})",
   "Model default": "Par défaut du modèle",
   "Use the model's default reasoning effort": "Utiliser l’effort de raisonnement par défaut du modèle",

@@ -48,6 +48,8 @@ const catalog: Catalog = {
   "Model": "Модель",
   "Choose a model": "Выберите модель",
   "Reasoning": "Рассуждение",
+  "Speed": "Скорость",
+  "Standard": "Стандартная",
   "Model default ({defaultLabel})": "По умолчанию для модели ({defaultLabel})",
   "Model default": "По умолчанию для модели",
   "Use the model's default reasoning effort": "Использовать уровень рассуждения модели по умолчанию",
