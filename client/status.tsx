@@ -15,8 +15,8 @@ const statusGlyph: Record<Status, { icon: string; color(c: Colors): string }> = 
   test: { icon: "CircleGauge", color: (c) => c.accent },
   in_review: { icon: "CircleDotDashed", color: (c) => c.accent },
   committed: { icon: "GitCommitHorizontal", color: (c) => c.statusSuccess },
-  blocked: { icon: "CircleSlash", color: (c) => c.statusDanger },
   integrated: { icon: "GitMerge", color: (c) => c.statusSuccess },
+  blocked: { icon: "CircleSlash", color: (c) => c.statusDanger },
   done: { icon: "CircleCheck", color: (c) => c.statusSuccess },
   cancelled: { icon: "CircleX", color: (c) => c.foregroundMuted },
 };
