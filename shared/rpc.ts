@@ -517,6 +517,131 @@ export const deleteCheck = defineRpc({
   input: z.strictObject({ id: z.string().min(1) }),
   output: wrapupCheckSchema,
 });
+/** Workspace switch (WORKSPACE-SWITCH-SPEC §3, §9): preflight of either direction. */
+const switchDirection = z.enum(["to_worktree", "to_local"]);
+const branchSideSchema = z.object({
+  branch: z.string(),
+  /** Commits of this side the other side's branch does not contain. */
+  notInOther: z.number().int(),
+  commits: z.array(z.object({ sha: z.string(), subject: z.string(), at: z.string() })),
+});
+/** Switch to local (§9.1): the worktree and the main checkout side by side. */
+export const switchCompareSchema = z.object({
+  worktree: branchSideSchema,
+  main: branchSideSchema,
+  /**
+   * Changed files grouped by their first two directory levels (`folderOf`): how many changed
+   * on each side and what Copy does with the worktree's. Conflicts first, then changed on
+   * both sides, worktree only, main checkout only. Capped.
+   */
+  folders: z.array(
+    z.object({
+      path: z.string(),
+      worktree: z.number().int(),
+      main: z.number().int(),
+      apply: z.number().int(),
+      present: z.number().int(),
+      conflicts: z.number().int(),
+    }),
+  ),
+  totals: z.object({ worktree: z.number().int(), main: z.number().int(), both: z.number().int(), files: z.number().int(), folders: z.number().int() }),
+});
+export type SwitchCompare = z.infer<typeof switchCompareSchema>;
+export const switchCheckSchema = z.object({
+  taskId: z.string(),
+  revision: z.number().int(),
+  direction: switchDirection,
+  workspace: z.object({ id: z.string(), kind: z.string(), directory: z.string() }).nullable(),
+  /** The card owns its current workspace: it is archived, else only the card's sessions. */
+  archiveWorkspace: z.boolean(),
+  sessions: z.number().int(),
+  /** Idle sessions of the card that can be asked for a handover (§2.2). */
+  idleSessions: z.array(z.object({ id: z.string(), title: z.string() })),
+  mainBranch: z.string().nullable(),
+  base: z.string().nullable(),
+  /** Suggested branch for the new worktree (to_worktree). */
+  branchName: z.string(),
+  copy: z
+    .object({ tracked: z.number().int(), untracked: z.number().int(), bytes: z.number(), files: z.array(z.string()) })
+    .nullable(),
+  handover: z.object({ at: z.string(), files: z.number().int(), session: z.string() }).nullable(),
+  /** The worktree being left (to_local). */
+  worktree: z
+    .object({
+      branch: z.string(),
+      uncommitted: z.number().int(),
+      notIntegrated: z.number().int(),
+      /**
+       * With uncommitted changes: what "Copy to the main checkout" would do (§9).
+       * `files` apply, `present` are already there, `conflicts` refuse the copy.
+       */
+      copyBack: z.object({ files: z.number().int(), present: z.number().int(), conflicts: z.array(z.string()), busy: z.string().nullable() }).nullable(),
+    })
+    .nullable(),
+  compare: switchCompareSchema.nullable(),
+  blockers: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+export type SwitchCheck = z.infer<typeof switchCheckSchema>;
+export const switchCheck = defineRpc({
+  name: "tasks.switch-check",
+  input: z.strictObject({ id: z.string().min(1), direction: switchDirection }),
+  output: switchCheckSchema,
+});
+export const switchWorkspace = defineRpc({
+  name: "tasks.switch",
+  input: z.strictObject({
+    id: z.string().min(1),
+    revision: z.number().int().positive(),
+    operationId: z.string().min(1).max(200),
+    direction: switchDirection,
+    branchName: z.string().trim().max(200).optional(),
+    /**
+     * to_local with uncommitted worktree changes (§9): copy them to the main checkout (refused on conflicts),
+     * overwrite (copy, and the worktree's file wins where both changed it), or discard. A patch is kept either way.
+     */
+    uncommitted: z.enum(["copy", "overwrite", "discard"]).optional(),
+  }),
+  output: z.object({ workspaceId: z.string(), directory: z.string(), branch: z.string().nullable(), copied: z.number().int(), warnings: z.array(z.string()) }),
+});
+/** Sends the fixed handover prompt to an idle session of the card (§2.2). */
+export const askHandover = defineRpc({
+  name: "tasks.ask-handover",
+  input: z.strictObject({ id: z.string().min(1), agentId: z.string().min(1) }),
+  output: z.object({ sent: z.boolean() }),
+});
+/** Release from main (§5): preflight, run, undo. */
+export const releaseCheckSchema = z.object({
+  taskId: z.string(),
+  revision: z.number().int(),
+  files: z.array(z.object({ path: z.string(), added: z.number().int(), removed: z.number().int() })),
+  /** Identifies the release patch the user saw; a changed patch refuses the run. */
+  patchHash: z.string(),
+  blockers: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
+export type ReleaseCheck = z.infer<typeof releaseCheckSchema>;
+export const releaseCheck = defineRpc({
+  name: "tasks.release-check",
+  input: z.strictObject({ id: z.string().min(1) }),
+  output: releaseCheckSchema,
+});
+export const releaseChanges = defineRpc({
+  name: "tasks.release",
+  input: z.strictObject({
+    id: z.string().min(1),
+    revision: z.number().int().positive(),
+    operationId: z.string().min(1).max(200),
+    patchHash: z.string().min(1),
+    acknowledgeWarnings: z.boolean(),
+  }),
+  output: z.object({ files: z.number().int() }),
+});
+export const releaseUndo = defineRpc({
+  name: "tasks.release-undo",
+  input: z.strictObject({ id: z.string().min(1), revision: z.number().int().positive(), operationId: z.string().min(1).max(200) }),
+  output: z.object({ files: z.number().int() }),
+});
 export const managedSessions = defineRpc({
   name: "sessions.managed",
   input: z.strictObject({}),

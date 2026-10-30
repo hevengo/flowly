@@ -12,6 +12,7 @@ import type { SummaryStore } from "./summaries";
 import { runSummaryModels } from "./summary-models";
 import type { AgentLike, UsageService } from "./usage";
 import { modelId } from "./agent-model";
+import { cardWorkspaceIds, workspaceOwners } from "../shared/workspace-switch";
 import { laneName } from "../shared/lanes";
 import { historyStatusLabel, type Board, type HistoryStatus, type Project, type Task } from "../shared/model";
 import { SUMMARIZER_LABELS, isSummarizer, summaryModelsOf, type SummaryEntry, type SummarySettings } from "../shared/summary";
@@ -183,12 +184,12 @@ export class InsightsService {
   }
 
   /** Agent habits for the 7 days ending at `day` (WORKFLOW-INSIGHTS-SPEC §12); the agent list is read only for turns that carry no model. */
-  private async habits(entries: readonly FlowEntry[], board: Board, tasks: readonly { workspaceId: string }[], day: string, tz: string | undefined, paseo: PaseoApi) {
+  private async habits(entries: readonly FlowEntry[], board: Board, tasks: readonly Pick<Task, "workspaceId" | "previousWorkspaces">[], day: string, tz: string | undefined, paseo: PaseoApi) {
     const full = withMoveDetails(entries, board.events);
     const wanted = modellessAgents(full, { day, tz });
     const models = new Map<string, string>();
     if (wanted.size) {
-      const workspaces = new Set(tasks.map((t) => t.workspaceId));
+      const workspaces = new Set(tasks.flatMap(cardWorkspaceIds));
       try {
         let cursor: string | undefined;
         do {
@@ -245,7 +246,7 @@ export class InsightsService {
   async project(input: WindowInput, paseo: PaseoApi): Promise<InsightsView> {
     const { tz, now, today } = this.window(input);
     const { board, tasks, entries } = await this.context(input.projectId);
-    const workspaces = new Set(tasks.map((t) => t.workspaceId));
+    const workspaces = new Set(tasks.flatMap(cardWorkspaceIds));
     const modelless = new Set(entries.filter((e) => e.action === "agent.turn_ended" && !e.model && e.agentId).map((e) => e.agentId!));
     const models = await this.agentModels(modelless, workspaces, paseo);
     const { cards } = this.finished(tasks, entries, now, tz, today, (id) => models.get(id));
@@ -277,7 +278,7 @@ export class InsightsService {
 
   /** Every session (archived included) in the project's card workspaces, with its card, model and whether it runs now. */
   private async cardAgents(tasks: readonly Task[], paseo: PaseoApi) {
-    const owner = new Map(tasks.map((t) => [t.workspaceId, t.id]));
+    const owner = new Map([...workspaceOwners(tasks)].map(([workspace, t]) => [workspace, t.id]));
     const agents: (AgentLike & { taskId: string })[] = [];
     const models = new Map<string, string>();
     const running = new Set<string>();

@@ -6,6 +6,7 @@ import { createInterface } from "node:readline";
 import type { PaseoApi } from "@getpaseo/client";
 import type { BoardStore } from "./store";
 import { isSummarizer } from "../shared/summary";
+import { cardWorkspaceIds } from "../shared/workspace-switch";
 import { TOKEN_SLOT_MS, addUsage, zeroUsage, type SessionUsage, type TaskUsage, type TokenUsage } from "../shared/usage";
 
 /**
@@ -285,10 +286,12 @@ export class UsageService {
     const task = (await this.store.read()).tasks.find((t) => t.id === taskId);
     if (!task) throw new Error("Task not found.");
     const agents: AgentLike[] = [];
+    // Sessions of the card's earlier workspaces count too (WORKSPACE-SWITCH-SPEC §8).
+    const workspaces = new Set(cardWorkspaceIds(task));
     let cursor: string | undefined;
     do {
       const page = await paseo.agents.list({ filter: { includeArchived: true }, page: { limit: 200, cursor } });
-      for (const { agent } of page.entries) if (agent.workspaceId === task.workspaceId) agents.push(agent as AgentLike);
+      for (const { agent } of page.entries) if (agent.workspaceId && workspaces.has(agent.workspaceId)) agents.push(agent as AgentLike);
       cursor = page.pageInfo.nextCursor ?? undefined;
     } while (cursor);
     const sessions = await Promise.all(agents.map((a) => this.session(a)));

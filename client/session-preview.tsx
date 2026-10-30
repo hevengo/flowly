@@ -63,6 +63,7 @@ import {
 } from "./session-state";
 import { sendCardInstruction, workspaceSession } from "./session";
 import { useStableCallback } from "./stable";
+import { cardWorkspaceIds } from "../shared/workspace-switch";
 import { PendingRequests } from "./session-question";
 import { NextMoves } from "./next-moves";
 import { nextMoveDraft, openNextMoves, shownMoves } from "../shared/next-moves";
@@ -251,7 +252,9 @@ function SessionPreviewView({
   // The stream is fresher than the last poll while it runs.
   const polled = current.data?.agent;
   const actor = streamed && (!polled || streamed.updatedAt >= polled.updatedAt) ? streamed : polled;
-  const belongs = !!actor && actor.workspaceId === task.workspaceId;
+  // Archived sessions of the card's earlier workspaces stay readable (WORKSPACE-SWITCH-SPEC §8).
+  const belongs =
+    !!actor && (actor.workspaceId === task.workspaceId || (!!actor.archivedAt && !!actor.workspaceId && cardWorkspaceIds(task).includes(actor.workspaceId)));
   const active = belongs ? actor : undefined;
   // The transcript (markdown, images) and the slower reads wait for the open
   // transition to finish (PERFORMANCE-SPEC §3).

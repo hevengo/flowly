@@ -37,6 +37,8 @@ import {
   artifactInputSchema,
   artifactRemovalSchema,
   tagsInputSchema,
+  handoverInputSchema,
+  integrateInputSchema,
   typeInputSchema,
   nextMovesInputSchema,
   workpadInputSchema,
@@ -56,6 +58,8 @@ import {
   type ArtifactToolInput,
   type ArtifactRemovalInput,
   type TagsToolInput,
+  type HandoverInput,
+  type IntegrateInput,
   type TypeToolInput,
   type NextMovesInput,
   type WorkpadInput,
@@ -66,6 +70,7 @@ import { BoardStore } from "./store";
 import { BoardService } from "./service";
 import { ToolSecrets, digest } from "./tool-context";
 import { ToolError } from "./tool-error";
+import type { WorkspaceSwitchService } from "./workspace-switch";
 import { ideaLimits, isDeliveryStatus, isWorkStatus, legacyStatus, type Board, type Idea, type Receipt, type Status } from "../shared/model";
 import { isLegacyScope } from "../shared/scope";
 import { MemoryError, type MemoryService } from "./memory";
@@ -105,6 +110,30 @@ export class AgentService {
   connectors?: ConnectorService;
   /** Project memory (PROJECT-MEMORY-SPEC); set by the plugin entry. */
   memory?: MemoryService;
+  /** Workspace switch (WORKSPACE-SWITCH-SPEC); set by the plugin entry. */
+  switches?: WorkspaceSwitchService;
+  /**
+   * flowly_integrate (WORKSPACE-SWITCH-SPEC §6): the card's branch into the main
+   * checkout. A signed call of the card's session; no receipt and no card revision change.
+   */
+  async integrate(identity: ToolIdentity, raw: IntegrateInput) {
+    const input = integrateInputSchema.parse(raw);
+    this.secrets.validateRequest(identity, input.request, input.expectedRevision);
+    if (!this.switches) throw new ToolError("RESOURCE_UNAVAILABLE", "Integration is unavailable.");
+    const r = await this.resources(identity);
+    if (r.task.archivedAt || r.project.archivedAt) throw new ToolError("ARCHIVED", "Task/project is archived.");
+    if (r.task.revision !== input.expectedRevision.task || r.project.revision !== input.expectedRevision.project)
+      throw new ToolError("REVISION_CONFLICT", "The card changed. Read flowly_get_task again.", true);
+    const result = await this.switches.integrateCard({
+      taskId: r.task.id,
+      agentId: identity.agentId,
+      workspaceDirectory: r.workspace.workspaceDirectory,
+      workspaceKind: r.workspace.workspaceKind,
+      ...(input.ref ? { ref: input.ref } : {}),
+    });
+    this.accesses.set(identity.agentId, { at: new Date(this.clock()).toISOString(), action: "integrate" });
+    return result;
+  }
   /** flowly_recall (PROJECT-MEMORY-SPEC §6.4): read-only. */
   async recall(identity: ToolIdentity, raw: RecallInput) {
     const input = recallInputSchema.parse(raw);
@@ -441,10 +470,10 @@ export class AgentService {
   }
   async write(
     identity: ToolIdentity,
-    action: "status" | "progress" | "idea" | "idea_update" | "idea_remove" | "remember" | "artifact" | "artifact_remove" | "tags" | "type" | "next_moves" | "workpad",
+    action: "status" | "progress" | "idea" | "idea_update" | "idea_remove" | "remember" | "artifact" | "artifact_remove" | "tags" | "type" | "next_moves" | "workpad" | "handover",
     raw: unknown,
   ): Promise<ToolResult> {
-    const input: StatusInput | ProgressInput | IdeaInput | IdeaUpdateInput | IdeaRemovalInput | RememberInput | ArtifactToolInput | ArtifactRemovalInput | TagsToolInput | TypeToolInput | NextMovesInput | WorkpadInput =
+    const input: StatusInput | ProgressInput | IdeaInput | IdeaUpdateInput | IdeaRemovalInput | RememberInput | ArtifactToolInput | ArtifactRemovalInput | TagsToolInput | TypeToolInput | NextMovesInput | WorkpadInput | HandoverInput =
       action === "status"
         ? statusInputSchema.parse(raw)
         : action === "remember"
@@ -467,7 +496,9 @@ export class AgentService {
                     ? nextMovesInputSchema.parse(raw)
                     : action === "workpad"
                       ? workpadInputSchema.parse(raw)
-                      : progressInputSchema.parse(raw);
+                      : action === "handover"
+                        ? handoverInputSchema.parse(raw)
+                        : progressInputSchema.parse(raw);
     const signed = this.secrets.validateRequest(
       identity,
       input.request,
@@ -860,6 +891,21 @@ export class AgentService {
           moves: [...moves],
         });
       const movesEvent = action === "next_moves" ? recordMoves((input as NextMovesInput).moves) : undefined;
+      // This card's own changes for a workspace switch (WORKSPACE-SWITCH-SPEC §2.1); no revision change.
+      const handoverEvent =
+        action === "handover"
+          ? (() => {
+              const files = [...new Set((input as HandoverInput).files)];
+              task.handover = { agentId: identity.agentId, at: new Date(this.clock()).toISOString(), files, notes: (input as HandoverInput).notes };
+              return this.store.event(board, {
+                taskId: task.id,
+                agentId: identity.agentId,
+                actor: "agent",
+                action: "handover_written",
+                note: `${files.length} file${files.length === 1 ? "" : "s"}`,
+              });
+            })()
+          : undefined;
       // Managing an idea of this card (IDEAS-SPEC §3.1).
       const ideaEvent =
         action === "idea_update" || action === "idea_remove"
@@ -874,6 +920,7 @@ export class AgentService {
         typeEvent ??
         movesEvent ??
         workpadEvent ??
+        handoverEvent ??
         (action === "idea" || action === "remember"
           ? this.store.event(board, {
               taskId: task.id,

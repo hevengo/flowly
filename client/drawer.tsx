@@ -71,6 +71,7 @@ import { LinkOrigin, TaskLinks } from "./task-links";
 import { TaskArtifacts } from "./task-artifacts";
 import { TaskWorkpad } from "./task-workpad";
 import { TaskTags } from "./task-tags";
+import { ReleaseModal, ReleaseNotice, SwitchModal, type SwitchDirection } from "./workspace-switch";
 import { drawerSectionOrder, drawerSectionsOpen, type AnyDrawerSection, type DrawerSection } from "../shared/drawer-sections";
 import { ideaInstruction } from "../shared/ideas";
 import { getLocale, localizedLabels, msg, t, tn } from "../shared/i18n";
@@ -168,6 +169,7 @@ function TaskDrawerView({
   const { colors } = theme;
   const paseo = usePaseo(),
     update = useRpc(rpc.updateTask),
+    undoRelease = useRpc(rpc.releaseUndo),
     adoptIdea = useRpc(rpc.adoptIdea),
     contextRead = useRpc(rpc.taskContext),
     configure = useRpc(rpc.configureSession);
@@ -178,6 +180,9 @@ function TaskDrawerView({
     // A session started from an idea (IDEAS-SPEC §6.3): prefills the form, recorded on the idea once created.
     [ideaSession, setIdeaSession] = useState<Idea | null>(null),
     [showWrapup, setShowWrapup] = useState(false),
+    // Workspace switch and release from main (WORKSPACE-SWITCH-SPEC §3.1, §5).
+    [switching, setSwitching] = useState<SwitchDirection | null>(null),
+    [showRelease, setShowRelease] = useState(false),
     [showArchived, setShowArchived] = useState(false),
     // Subagent rows the user opened or closed, by main session; otherwise they follow `urgent`.
     [subagentsOpen, setSubagentsOpen] = useState<Record<string, boolean>>({}),
@@ -476,6 +481,10 @@ function TaskDrawerView({
   // Wrapped up while kept on the board: its workspace/sessions are archived on
   // purpose, so neither offer Wrap up again nor warn that they are unavailable.
   const wrapped = finished ? currentWrapup(events, task.id) : null;
+  // Switch between the main checkout and a worktree (WORKSPACE-SWITCH-SPEC §3.1, §9).
+  const switchTo: SwitchDirection | null =
+    !place || finished || task.archivedAt || project.archivedAt ? null : place === "worktree" ? "to_local" : project.links?.length ? null : "to_worktree";
+  const releasePending = task.switch?.release === "pending" && !task.archivedAt;
   const taskActions = (): MenuEntry[] => [
     {
       id: "start",
@@ -493,6 +502,29 @@ function TaskDrawerView({
       : []),
     ...(finished && !wrapped && !task.archivedAt && !project.archivedAt
       ? [{ id: "wrap", label: t("Wrap up…"), icon: "PackageCheck", onPress: () => setShowWrapup(true) }]
+      : []),
+    ...(switchTo
+      ? [
+          {
+            id: "switch",
+            label: switchTo === "to_local" ? t("Switch to local…") : t("Switch to worktree…"),
+            icon: switchTo === "to_local" ? "Folder" : "GitBranch",
+            disabled: sending,
+            onPress: () => setSwitching(switchTo),
+          },
+        ]
+      : []),
+    ...(releasePending ? [{ id: "release", label: t("Release from main…"), icon: "GitPullRequestArrow", onPress: () => setShowRelease(true) }] : []),
+    ...(task.switch?.release === "released" && !task.switch.integratedAt && !task.archivedAt
+      ? [
+          {
+            id: "release-undo",
+            label: t("Undo release"),
+            icon: "Undo2",
+            disabled: sending,
+            onPress: () => void perform(() => undoRelease({ id: task.id, revision: task.revision, operationId: `undo-${task.id}-${task.revision}` }), t("Release undone")),
+          },
+        ]
       : []),
     { kind: "separator" as const, id: "s" },
     {
@@ -1042,6 +1074,7 @@ function TaskDrawerView({
                 onOpen={openSession}
               />
             ))}
+            {releasePending && <ReleaseNotice disabled={!active} onRelease={() => setShowRelease(true)} />}
             {(task.status === "done" || task.status === "cancelled") && !task.archivedAt && !project.archivedAt && (
               <View
                 style={{
@@ -1106,6 +1139,8 @@ function TaskDrawerView({
               workspaceStatus={workspace.isPending ? t("Checking…") : workspace.data?.status || t("Unavailable")}
               owner={scope.data?.owner}
               directories={scope.data?.directories || []}
+              place={place}
+              onSwitch={switchTo ? () => setSwitching(switchTo) : undefined}
             />
             <TaskUsage taskId={task.id} active={ready} section={sectionStates.usage} />
             {meaningful.length > 0 && (
@@ -1180,6 +1215,28 @@ function TaskDrawerView({
         onDone={(summary) => {
           setShowWrapup(false);
           toast.show(summary, { variant: "success" });
+          refreshAll();
+        }}
+      />
+      <SwitchModal
+        task={task}
+        direction={switching || "to_worktree"}
+        open={active && !!switching}
+        onClose={() => setSwitching(null)}
+        onDone={(result) => {
+          setSwitching(null);
+          toast.show(result.text, { variant: "success" });
+          for (const warning of result.warnings) toast.show(warning, { variant: "warning" });
+          refreshAll();
+        }}
+      />
+      <ReleaseModal
+        task={task}
+        open={active && showRelease}
+        onClose={() => setShowRelease(false)}
+        onDone={(text) => {
+          setShowRelease(false);
+          toast.show(text, { variant: "success" });
           refreshAll();
         }}
       />
@@ -1340,6 +1397,11 @@ const activityText: Record<string, string> = localizedLabels({
   workspace_restored: msg("Restored the workspace"),
   workspace_restore_skipped: msg("Workspace not restored"),
   sessions_restored: msg("Restored the sessions"),
+  workspace_switched: msg("Switched the workspace"),
+  handover_written: msg("Wrote the handover"),
+  changes_released: msg("Released changes from main"),
+  release_undone: msg("Undid the release"),
+  branch_integrated: msg("Integrated the branch"),
   progress_reported: msg("Reported progress"),
   idea_edited: msg("Edited the idea"),
   idea_removed: msg("Removed the idea"),

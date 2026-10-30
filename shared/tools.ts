@@ -20,6 +20,7 @@ import {
   taskTypeSchema,
   tagLimits,
   tagInputList,
+  switchLimits,
   nextMoveLimits,
   nextMoveTargets,
   workpadLimits,
@@ -248,6 +249,42 @@ export const tagsInputSchema = z.strictObject({
     .max(tagLimits.perCall)
     .default([])
     .describe("Tags to remove. Only tags an agent added can be removed."),
+});
+/** flowly_handover (WORKSPACE-SWITCH-SPEC §2.1): this card's own changes in the main checkout. */
+export const handoverInputSchema = z.strictObject({
+  expectedRevision: revisionSchema,
+  request: requestSchema,
+  files: z
+    .array(z.string().trim().min(1).max(switchLimits.handoverPath))
+    .min(1)
+    .max(switchLimits.handoverFiles)
+    .describe("Repo-relative paths this card changed in the main checkout: added, modified and deleted files, including ones changed by scripts or generated."),
+  notes: z
+    .string()
+    .max(switchLimits.handoverNotes)
+    .default("")
+    .describe("Markdown: which hunks in files shared with other cards are this card's, what is unfinished, anything the next session must know."),
+});
+/** flowly_integrate (WORKSPACE-SWITCH-SPEC §6): bring the card's branch into the main checkout. */
+export const integrateInputSchema = z.strictObject({
+  expectedRevision: revisionSchema,
+  request: requestSchema,
+  ref: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe("What to integrate; default this card's worktree branch (e.g. origin/main after its merge request was merged and fetched)."),
+});
+export const integrateResultSchema = z.object({
+  integrated: z.literal(true),
+  ref: z.string(),
+  from: z.string(),
+  to: z.string(),
+  commits: z.number().int(),
+  files: z.array(z.string()),
+  uncommitted: z.number().int(),
 });
 /** flowly_set_type (CARD-TYPE-SPEC §2): classify a card that has no type yet. */
 export const typeInputSchema = z.strictObject({
@@ -649,6 +686,8 @@ export type RememberInput = z.infer<typeof rememberInputSchema>;
 export type RecallInput = z.input<typeof recallInputSchema>;
 export type AgentSearchInput = z.input<typeof agentSearchInputSchema>;
 export type TagsToolInput = z.infer<typeof tagsInputSchema>;
+export type HandoverInput = z.infer<typeof handoverInputSchema>;
+export type IntegrateInput = z.infer<typeof integrateInputSchema>;
 export type TypeToolInput = z.infer<typeof typeInputSchema>;
 export type NextMovesInput = z.infer<typeof nextMovesInputSchema>;
 export type ArtifactToolInput = z.infer<typeof artifactInputSchema>;

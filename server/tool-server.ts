@@ -19,6 +19,9 @@ import {
   localhostOriginValidation,
 } from "@modelcontextprotocol/node";
 import {
+  handoverInputSchema,
+  integrateInputSchema,
+  integrateResultSchema,
   ideaInputSchema,
   ideaRemovalSchema,
   ideaUpdateInputSchema,
@@ -450,6 +453,28 @@ export class ToolServer {
           },
           (input) => wrap(() => this.agents.write(identity, "workpad", input)),
         );
+        mcp.registerTool(
+          "flowly_handover",
+          {
+            description:
+              "Write this card's handover for a switch to a worktree (WORKSPACE-SWITCH-SPEC §2): every repo-relative file this card changed in the main checkout, including files changed by scripts or generated, and in notes which hunks in files shared with other cards are this card's and what is unfinished. Call it when the user asks for a handover or before they switch the card. Replaces the card's previous handover. Does not change card status or task revision. Copy revisions/request from get_task.",
+            inputSchema: handoverInputSchema,
+            outputSchema: toolResultSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          },
+          (input) => wrap(() => this.agents.write(identity, "handover", input)),
+        );
+        mcp.registerTool(
+          "flowly_integrate",
+          {
+            description:
+              "Integrate this worktree card's branch (or ref) into the branch checked out in the main checkout, only when the user asks (WORKSPACE-SWITCH-SPEC §6). Flowly applies it to the main checkout's index and working tree and moves its branch with a compare-and-swap, so other uncommitted work there stays; it never merges, stashes or resets. Refusals: RELEASE_PENDING (ask the user to press Release from main on the card first), REBASE_NEEDED (rebase your branch onto the main branch in your worktree, rerun the checks, call again), CONFLICT (uncommitted changes in the main checkout touch the same lines; files listed), NOT_WORKTREE, DETACHED_HEAD, CHECKOUT_BUSY, GIT_BUSY. Afterwards set integrated with flowly_update_status as usual. Does not change card status or task revision. Copy revisions/request from get_task.",
+            inputSchema: integrateInputSchema,
+            outputSchema: integrateResultSchema,
+            annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+          },
+          (input) => wrap(() => this.agents.integrate(identity, input)),
+        );
         this.registerCardTools(mcp, () => this.agents.cardCaller(identity));
         return mcp;
       },
@@ -539,7 +564,7 @@ export class ToolServer {
     }
     const body = z
       .strictObject({
-        action: z.enum(["get", "status", "progress", "idea", "idea_update", "idea_remove", "remember", "recall", "search", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad", "external", "ticket", "list_cards", "get_card", "create_card", "update_card"]),
+        action: z.enum(["get", "status", "progress", "idea", "idea_update", "idea_remove", "remember", "recall", "search", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad", "handover", "integrate", "external", "ticket", "list_cards", "get_card", "create_card", "update_card"]),
         input: z.unknown(),
       })
       .parse(JSON.parse(Buffer.concat(chunks).toString("utf8")));
@@ -555,6 +580,8 @@ export class ToolServer {
               ? await this.agents.searchCards(identity, agentSearchInputSchema.parse(body.input))
             : body.action === "list_cards" || body.action === "get_card" || body.action === "create_card" || body.action === "update_card"
               ? await this.cardAction(identity, body.action, body.input)
+            : body.action === "integrate"
+              ? await this.agents.integrate(identity, integrateInputSchema.parse(body.input))
             : await this.agents.write(identity, body.action, body.input);
     this.json(res, { ok: true, result: value });
   }

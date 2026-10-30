@@ -143,6 +143,38 @@ export const projectSchema = z.object({
   /** Linked multi-repo project: symlinks the plugin created inside its own root (PROJECT-PICKER-SPEC). */
   links: z.array(z.object({ name: z.string(), target: z.string() })).optional(),
 });
+/** Workspace switch (WORKSPACE-SWITCH-SPEC §7.1). */
+export const switchLimits = { previousWorkspaces: 10, handoverFiles: 500, handoverPath: 500, handoverNotes: 20000 } as const;
+export const previousWorkspaceSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  directory: z.string(),
+  branch: z.string().optional(),
+  switchedAt: timestamp,
+});
+export const handoverSchema = z.object({
+  agentId: z.string(),
+  at: timestamp,
+  files: z.array(z.string().max(switchLimits.handoverPath)).max(switchLimits.handoverFiles),
+  notes: z.string().max(switchLimits.handoverNotes),
+});
+export type Handover = z.infer<typeof handoverSchema>;
+export const switchDirections = ["to_worktree", "to_local"] as const;
+export const switchSchema = z.object({
+  id: z.string(),
+  at: timestamp,
+  direction: z.enum(switchDirections),
+  /** The main checkout's HEAD the worktree started at (to_worktree). */
+  base: z.string().optional(),
+  mainBranch: z.string().optional(),
+  /** The worktree's branch (to_worktree) or the earlier worktree's branch (to_local). */
+  branch: z.string().optional(),
+  release: z.enum(["none", "pending", "released"]),
+  releasedAt: timestamp.optional(),
+  /** Set once flowly_integrate landed the branch; Undo release is no longer offered. */
+  integratedAt: timestamp.optional(),
+});
+export type WorkspaceSwitch = z.infer<typeof switchSchema>;
 export const taskSchema = z.object({
   id: z.string(),
   projectId: z.string(),
@@ -167,6 +199,12 @@ export const taskSchema = z.object({
   ownsWorkspace: z.boolean().optional(),
   /** Created from an idea proposed on another card (IDEAS-SPEC §2.2). */
   origin: z.object({ taskId: z.string(), ideaId: z.string() }).optional(),
+  /** Earlier workspaces of the card, oldest first; read-only history (WORKSPACE-SWITCH-SPEC §8). */
+  previousWorkspaces: z.array(previousWorkspaceSchema).max(switchLimits.previousWorkspaces).optional(),
+  /** This card's own changes in the main checkout, written by its session (WORKSPACE-SWITCH-SPEC §2). */
+  handover: handoverSchema.optional(),
+  /** The latest workspace switch (WORKSPACE-SWITCH-SPEC §7.1). */
+  switch: switchSchema.optional(),
 });
 /** A follow-up an agent proposed on its card; the user may turn it into a card (IDEAS-SPEC). */
 export const ideaStatuses = ["open", "accepted", "dismissed"] as const;
@@ -455,7 +493,7 @@ export const receiptSchema = z.object({
   agentId: z.string(),
   taskId: z.string(),
   payloadHash: z.string(),
-  action: z.enum(["status", "progress", "idea", "idea_update", "idea_remove", "remember", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad"]),
+  action: z.enum(["status", "progress", "idea", "idea_update", "idea_remove", "remember", "artifact", "artifact_remove", "tags", "type", "next_moves", "workpad", "handover"]),
   /** Empty when an artifact write changed nothing (same target already recorded). */
   eventId: z.string(),
   /** Stable result identity for idea writes, even after the idea is removed or pruned. */

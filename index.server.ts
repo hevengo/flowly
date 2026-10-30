@@ -11,6 +11,7 @@ import { ToolServer } from "./server/tool-server";
 import { SessionReadStore, SessionReadService, daemonNativeAttention } from "./server/session-reads";
 import { readAttentionCount } from "./server/attention-count";
 import { WrapupService } from "./server/wrapup";
+import { WorkspaceSwitchService } from "./server/workspace-switch";
 import { WorkspaceRestoreService } from "./server/workspace-restore";
 import { SessionImageService } from "./server/session-images";
 import { SessionTailService } from "./server/session-tail";
@@ -259,6 +260,17 @@ export default function contribute(host: PluginServerContext) {
     wrapups.check(input.id, paseo),
   );
   server.handle(rpc.wrapup, (input, { paseo }) => wrapups.run(input, paseo));
+  // Switching a card between the main checkout and a worktree (WORKSPACE-SWITCH-SPEC).
+  const switches = new WorkspaceSwitchService(store, store.directory, { latestSummary: (taskId) => summaries.store.latest(taskId) });
+  server.handle(rpc.switchCheck, async (input, { paseo }) => {
+    const { snapshot: _snapshot, kept: _kept, ...check } = await switches.check(input, paseo);
+    return check;
+  });
+  server.handle(rpc.switchWorkspace, (input, { paseo }) => switches.run(input, paseo));
+  server.handle(rpc.askHandover, (input, { paseo }) => switches.askHandover(input, paseo));
+  server.handle(rpc.releaseCheck, (input, { paseo }) => switches.releaseCheck(input.id, paseo));
+  server.handle(rpc.releaseChanges, (input, { paseo }) => switches.release(input, paseo));
+  server.handle(rpc.releaseUndo, (input) => switches.releaseUndo(input));
   const tools = new ToolServer(store);
   tools.agents.connectors = connectors;
   // Project memory (PROJECT-MEMORY-SPEC): confirmed knowledge shared across a project's cards.
@@ -270,6 +282,7 @@ export default function contribute(host: PluginServerContext) {
     memoryOn: (project) => memoryOn(project),
   };
   tools.agents.memory = memory;
+  tools.agents.switches = switches;
   server.handle(rpc.readMemory, async ({ projectId, etag }) => ifChanged(await memory.view(projectId), etag));
   server.handle(rpc.memoryCounts, async ({ etag }) => ifChanged(await memory.counts(), etag));
   server.handle(rpc.createMemory, (input) => memory.create(input));

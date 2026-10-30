@@ -81,6 +81,7 @@ import { SettingsFab, SettingsModal, type SettingsSection } from "./summary-sett
 import { SettingsOpenerContext } from "./settings-opener";
 import { findingDescription, workflowInsightsSettings, workflowSettingsValues, type Finding } from "../shared/workflow-insights";
 import { WrapupModal } from "./wrapup";
+import { SwitchModal, type SwitchDirection } from "./workspace-switch";
 import { performanceLogOn, performanceSettings, featureSettings, featureSettingsValues, ideasSettings, ideasSettingsValues, modelSettings, modelSettingsValues, wrapupSettings, wrapupSettingsValues } from "../shared/settings";
 import { pickOutputSession } from "./card-output";
 import { statusChanges } from "./changes";
@@ -301,6 +302,8 @@ function BoardContent(
     return () => perfConfigure(false, null);
   }, [perfOn]);
   const [wrapPrompt, setWrapPrompt] = useState("");
+  // Switch a card between the main checkout and a worktree (WORKSPACE-SWITCH-SPEC §3.1).
+  const [switchRequest, setSwitchRequest] = useState<{ taskId: string; direction: SwitchDirection } | null>(null);
   const finished = (status?: Status) => status === "done" || status === "cancelled";
   const askWrapup = (id: string, from: Status | undefined, to: Status) => {
     if (!finished(to) || finished(from)) return;
@@ -588,6 +591,7 @@ function BoardContent(
   const wrapPromptTask = wrapPrompt
     ? board?.tasks.find((t) => t.id === wrapPrompt && !t.archivedAt)
     : undefined;
+  const switchTask = switchRequest ? board?.tasks.find((t) => t.id === switchRequest.taskId && !t.archivedAt) : undefined;
   // Compact: open each project on its first lane that has cards (once per
   // project; a linked card or the user's own tab choice wins afterwards).
   const autoLane = useRef("");
@@ -838,11 +842,25 @@ function BoardContent(
     canOpenWorkspace && cardIndex.workspaceIds.has(card.workspaceId)
       ? [{ id: "workspace", label: t("Open workspace"), icon: "ArrowUpRight", onPress: () => openCardWorkspace(card) }]
       : [];
+  const switchMenuEntry = (card: Task) => {
+    const kind = cardIndex.workspaceKinds.get(card.workspaceId);
+    if (!kind || pending || project?.archivedAt || card.archivedAt || finished(card.status) || (kind === "local" && project?.links?.length)) return [];
+    const direction: SwitchDirection = kind === "worktree" ? "to_local" : "to_worktree";
+    return [
+      {
+        id: "switch",
+        label: kind === "worktree" ? t("Switch to local…") : t("Switch to worktree…"),
+        icon: kind === "worktree" ? "Folder" : "GitBranch",
+        onPress: () => setSwitchRequest({ taskId: card.id, direction }),
+      },
+    ];
+  };
   const cardMenu = (card: Task): MenuEntry[] => {
     const locked = pending || !!project?.archivedAt || !!card.archivedAt;
     return [
       { id: "open", label: t("Open details"), icon: "PanelRightOpen", onPress: () => setTask(card.id) },
       ...workspaceMenuEntry(card),
+      ...switchMenuEntry(card),
       {
         id: "start",
         label: t("Start session"),
@@ -1126,7 +1144,7 @@ function BoardContent(
   const workflowTipDue = !!project && workflowOn && !!onboarding.values && !(onboarding.values.tipsSeen.includes("first-workflow-insight") && onboarding.values.tipsSeen.includes("first-skill-draft"));
   const workflowView = useWorkflowInsightsQuery(project?.id || "", boardActive && workflowTipDue, false);
   const inPanel = !!props.workspaceId;
-  const dialogOpen = !!menu || !!projectForm || !!taskForm || !!removing || !!deleting || !!wrapPrompt || !!linking;
+  const dialogOpen = !!menu || !!projectForm || !!taskForm || !!removing || !!deleting || !!wrapPrompt || !!linking || !!switchRequest;
   const welcome = welcomeDecision({
     settingsStatus: onboarding.status,
     welcomeSeen: onboarding.values?.welcomeSeen ?? false,
@@ -2282,7 +2300,7 @@ function BoardContent(
                       setActionTask(null);
                     }}
                   />
-                  {workspaceMenuEntry(actionTask).map((entry) => (
+                  {[...workspaceMenuEntry(actionTask), ...switchMenuEntry(actionTask)].map((entry) => (
                     <Row
                       key={entry.id}
                       title={entry.label}
@@ -2535,6 +2553,21 @@ function BoardContent(
         />
         {whatsNew.length > 0 && (
           <WhatsNewWindow open={whatsNewOpen} theme={props.theme} releases={whatsNew} onClose={closeWhatsNew} onAction={whatsNewAction} />
+        )}
+        {switchTask && switchRequest && (
+          <SwitchModal
+            key={switchTask.id}
+            task={switchTask}
+            direction={switchRequest.direction}
+            open
+            onClose={() => setSwitchRequest(null)}
+            onDone={(result) => {
+              setSwitchRequest(null);
+              toast.show(result.text, { variant: "success" });
+              for (const warning of result.warnings) toast.show(warning, { variant: "warning" });
+              refresh();
+            }}
+          />
         )}
         {wrapPromptTask && (
           <WrapupModal

@@ -405,6 +405,7 @@ function MoreFeatures() {
     { icon: "Search", title: t("Search"), text: t("Search past cards, summaries, notes and deliverables.") },
     { icon: "SquarePlus", title: t("Cards from your agents"), text: t("Ask an agent to create or edit cards. New cards land in Backlog or Todo; you start them.") },
     { icon: "Tags", title: t("Tags"), text: t("Tag cards by module or direction. Agents tag their own cards too; filter and search by #tag.") },
+    { icon: "GitBranch", title: t("Switch to a worktree"), text: t("When local work gets tangled with other cards, move the card to its own worktree: every uncommitted change is copied, its session keeps only the card's changes, and Release takes them out of the main checkout.") },
     { icon: "FolderGit2", title: t("Saved with your project"), text: t("Each project's board is also kept in its folder (.flowly, ignored by git). Add the folder again to restore it.") },
     { icon: "Database", title: t("Backups"), text: t("Settings → Storage shows where the board is kept and its daily backups, and can restore one or export the board to JSON.") },
   ];

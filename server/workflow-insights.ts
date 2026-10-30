@@ -51,6 +51,7 @@ import {
   type WorkflowView,
 } from "../shared/workflow-insights";
 import { logFailure } from "./error-report";
+import { workspaceOwners } from "../shared/workspace-switch";
 
 const DAY_MS = 86_400_000;
 const TICK_MS = 15 * 60_000;
@@ -253,7 +254,7 @@ export class WorkflowInsightsService {
       const project = board.projects.find((p) => p.id === projectId);
       if (!project || !projectIncluded(project)) return 0;
       const tasks = board.tasks.filter((t) => t.projectId === projectId);
-      const byWorkspace = new Map(tasks.map((t) => [t.workspaceId, t]));
+      const byWorkspace = workspaceOwners(tasks);
       const cutoff = this.now() - BACKFILL_DAYS * DAY_MS;
       const agents: { id: string; provider: string; task: (typeof tasks)[number] }[] = [];
       let cursor: string | undefined;

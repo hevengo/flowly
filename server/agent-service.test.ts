@@ -1335,3 +1335,22 @@ test("integrated is a delivery like Committed, also straight from a work stage; 
   await expect(x.service.write(x.identity, "status", { ...input(ctx), status: "integrated", nextMoves: [] })).rejects.toMatchObject({ code: "STATUS_UNAVAILABLE" });
   expect((await x.store.read()).tasks[0]!.status).toBe("committed");
 });
+
+test("handover: stored on the card without a revision change, replaced by the next one, shown in get_task", async () => {
+  const x = await setup();
+  let ctx = await x.service.get(x.identity);
+  const first = await x.service.write(x.identity, "handover", { expectedRevision: ctx.revision, request: ctx.request, files: ["a.ts", "a.ts", "b.ts"], notes: "Hunk 2 of b.ts is mine." });
+  expect(first.receipt.action).toBe("handover");
+  expect(first.receipt.taskRevision).toBe(ctx.revision.task);
+  let board = await x.store.read();
+  expect(board.tasks[0].revision).toBe(ctx.revision.task);
+  expect(board.tasks[0].handover).toMatchObject({ agentId: x.identity.agentId, files: ["a.ts", "b.ts"], notes: "Hunk 2 of b.ts is mine." });
+  expect(board.events.at(-1)).toMatchObject({ action: "handover_written", actor: "agent", note: "2 files" });
+  ctx = await x.service.get(x.identity);
+  expect(ctx.task.handover?.files).toEqual(["a.ts", "b.ts"]);
+  await x.service.write(x.identity, "handover", { expectedRevision: ctx.revision, request: ctx.request, files: ["c.ts"] });
+  board = await x.store.read();
+  expect(board.tasks[0].handover).toMatchObject({ files: ["c.ts"], notes: "" });
+  ctx = await x.service.get(x.identity);
+  await expect(x.service.write(x.identity, "handover", { expectedRevision: ctx.revision, request: ctx.request, files: [] })).rejects.toThrow();
+});
