@@ -1,4 +1,4 @@
-import { suggestedMode } from "../shared/agent-defaults";
+import { providerBase, suggestedMode, suggestedThinking } from "../shared/agent-defaults";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { usePaseo } from "@getpaseo/plugin/client";
@@ -14,16 +14,17 @@ export type AgentDefaults = { provider: string; model: string; mode: string; thi
 /**
  * Provider / model / reasoning / speed / permission choice shared by "New
  * session" and "New task → Start an agent now". Remembered defaults fall back
- * to the provider's defaults when no longer offered. `cwd` scopes model/mode
- * discovery.
+ * to the provider's defaults when no longer offered. A mode, speed or reasoning
+ * not chosen yet (undefined) gets its suggestion (MODEL-DEFAULTS-SPEC).
+ * `cwd` scopes model/mode discovery.
  */
 export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; cwd?: string; defaults: AgentDefaults }) {
   const paseo = usePaseo();
   const [provider, setProviderState] = useState(defaults?.provider || "codex"),
     [model, setModel] = useState(defaults?.model || ""),
-    [mode, setMode] = useState(suggestedMode(defaults?.provider || "codex", defaults?.mode)),
-    [thinking, setThinking] = useState(defaults?.thinking || ""),
-    [speed, setSpeed] = useState(suggestedSpeed(defaults?.provider || "codex", defaults?.speed));
+    [mode, setMode] = useState<string | undefined>(defaults?.mode || undefined),
+    [thinking, setThinking] = useState<string | undefined>(defaults?.thinking || undefined),
+    [speed, setSpeed] = useState<string | undefined>(defaults?.speed);
   const providers = useQuery({
     queryKey: ["flowly", "providers"],
     queryFn: () => paseo.providers.listAvailable(),
@@ -59,9 +60,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
     if (!available.some((p) => p.provider === provider)) {
       setProviderState(available.find((p) => p.provider === "codex")?.provider || available[0].provider);
       setModel("");
-      setMode("");
-      setThinking("");
-      setSpeed("");
+      setMode(undefined);
+      setThinking(undefined);
+      setSpeed(undefined);
     }
   }, [providers.data, provider]);
   const selectable = (models.data?.models || []).filter((m) => m.isSelectable !== false);
@@ -73,9 +74,13 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
   // Reasoning effort: the model's own options; "" keeps the model default.
   const thinkingOptions = selectable.find((m) => m.id === chosenModel)?.thinkingOptions || [];
   const defaultThinking = selectable.find((m) => m.id === chosenModel)?.defaultThinkingOptionId || "";
-  const chosenThinking = thinking && thinkingOptions.some((t) => t.id === thinking) ? thinking : "";
+  const wantedThinking = thinking ?? suggestedThinking(thinkingOptions);
+  const chosenThinking = wantedThinking && thinkingOptions.some((t) => t.id === wantedThinking) ? wantedThinking : "";
+  // A custom provider (`codex-connected`, …) gets its base provider's suggestions.
+  const base = providerBase(provider, modes.data?.modes?.map((m) => m.id));
+  const wantedMode = mode ?? suggestedMode(base);
   const chosenMode =
-    mode && (!modes.isSuccess || modes.data?.modes?.some((m) => m.id === mode)) ? mode : "";
+    wantedMode && (!modes.isSuccess || modes.data?.modes?.some((m) => m.id === wantedMode)) ? wantedMode : "";
   // Speed: a provider feature of the chosen model (AGENT-SPEED-SPEC); "" is the provider's normal speed.
   const features = useQuery({
     queryKey: ["flowly", "features", provider, chosenModel, cwd],
@@ -88,7 +93,8 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
     staleTime: 300000,
   });
   const speedChoice = useMemo(() => speedFeature(features.data?.features), [features.data]);
-  const chosenSpeed = speed && speedChoice?.options.some((o) => o.id === speed) ? speed : "";
+  const wantedSpeed = speed ?? suggestedSpeed(base, undefined, speedChoice?.options);
+  const chosenSpeed = wantedSpeed && speedChoice?.options.some((o) => o.id === wantedSpeed) ? wantedSpeed : "";
   const providerAvailable = !!providers.data?.providers.some((p) => p.available && p.provider === provider);
   return {
     provider,
@@ -96,9 +102,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
       if (next === provider) return;
       setProviderState(next);
       setModel("");
-      setMode(suggestedMode(next));
-      setThinking("");
-      setSpeed(suggestedSpeed(next));
+      setMode(undefined);
+      setThinking(undefined);
+      setSpeed(undefined);
     },
     setModel,
     setMode,
@@ -107,9 +113,9 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
     reset(next: AgentDefaults) {
       setProviderState(next?.provider || "codex");
       setModel(next?.model || "");
-      setMode(suggestedMode(next?.provider || "codex", next?.mode));
-      setThinking(next?.thinking || "");
-      setSpeed(suggestedSpeed(next?.provider || "codex", next?.speed));
+      setMode(next?.mode || undefined);
+      setThinking(next?.thinking || undefined);
+      setSpeed(next?.speed);
     },
     chosenModel,
     chosenMode,
@@ -125,13 +131,14 @@ export function useAgentChoice({ enabled, cwd, defaults }: { enabled: boolean; c
     models,
     modes,
     features,
-    /** A model and provider are selectable, modes did not fail, and a remembered speed is not still being checked. */
+    /** A model and provider are selectable, modes are known and did not fail, and a wanted speed is not still being checked. */
     ready:
       models.isSuccess &&
       !!chosenModel &&
       providerAvailable &&
+      !modes.isPending &&
       (!chosenMode || !modes.isError) &&
-      (!speed || !features.isPending),
+      (!wantedSpeed || !features.isPending),
     providerAvailable,
   };
 }

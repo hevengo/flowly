@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agentModelFromValues, agentModelSchema, effectiveAgentModel, startingAgent, suggestedMode } from "./agent-defaults";
+import { agentModelFromValues, agentModelSchema, effectiveAgentModel, providerBase, startingAgent, suggestedMode, suggestedThinking } from "./agent-defaults";
 
 const claude = { provider: "claude", model: "claude-sonnet-5-5", thinking: "high" };
 const codex = { provider: "codex", model: "gpt-6-luna" };
@@ -22,13 +22,15 @@ describe("startingAgent", () => {
     expect(startingAgent(null, null)).toBeNull();
   });
   it("replaces provider, model and reasoning; keeps the mode only for the same provider", () => {
-    expect(startingAgent(last, claude)).toEqual({ provider: "claude", model: "claude-sonnet-5-5", mode: "plan", thinking: "high", speed: "" });
-    expect(startingAgent(last, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "auto-review", thinking: "", speed: "fast" });
-    expect(startingAgent(null, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "auto-review", thinking: "", speed: "fast" });
+    expect(startingAgent(last, claude)).toEqual({ provider: "claude", model: "claude-sonnet-5-5", mode: "plan", thinking: "high", speed: undefined });
+    // Unset mode ("") and speed (undefined) get the picker's suggestion.
+    expect(startingAgent(last, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "", speed: undefined });
+    expect(startingAgent(null, codex)).toEqual({ provider: "codex", model: "gpt-6-luna", mode: "", thinking: "", speed: undefined });
   });
   it("keeps the latest session's speed only for the same provider", () => {
     expect(startingAgent({ ...last, speed: "fast" }, claude)?.speed).toBe("fast");
-    expect(startingAgent({ ...last, speed: "fast" }, codex)?.speed).toBe("fast");
+    expect(startingAgent({ ...last, speed: "fast" }, codex)?.speed).toBeUndefined();
+    expect(startingAgent({ ...last, speed: "" }, claude)?.speed).toBe("");
   });
   it("uses the default's own permission mode over the latest session's", () => {
     expect(startingAgent(last, { ...claude, mode: "acceptEdits" })?.mode).toBe("acceptEdits");
@@ -58,4 +60,38 @@ it("suggests automatic approval and preserves explicit permissions", () => {
  expect(suggestedMode("codex", "full-access")).toBe("full-access");
  expect(suggestedMode("claude", "plan")).toBe("plan");
  expect(suggestedMode("other")).toBe("");
+});
+
+describe("providerBase", () => {
+  const claudeModes = ["plan", "default", "acceptEdits", "auto", "bypassPermissions"];
+  const codexModes = ["auto", "auto-review", "full-access"];
+  it("keeps the built-in providers, also before their modes are known", () => {
+    expect(providerBase("claude")).toBe("claude");
+    expect(providerBase("codex", [])).toBe("codex");
+  });
+  it("recognises custom providers by their base's permission modes", () => {
+    expect(providerBase("codex-connected", codexModes)).toBe("codex");
+    expect(providerBase("claude-connected", claudeModes)).toBe("claude");
+    expect(providerBase("my-glm", claudeModes)).toBe("claude");
+    expect(suggestedMode(providerBase("codex-connected", codexModes))).toBe("auto-review");
+    expect(suggestedMode(providerBase("claude-glm-fast", claudeModes))).toBe("auto");
+  });
+  it("leaves other providers and unknown modes alone", () => {
+    expect(providerBase("codex-connected")).toBe("codex-connected");
+    expect(providerBase("opencode", ["build", "plan"])).toBe("opencode");
+    expect(suggestedMode(providerBase("opencode", ["auto"]))).toBe("");
+  });
+});
+
+describe("suggestedThinking", () => {
+  const ids = (...list: string[]) => list.map((id) => ({ id }));
+  it("suggests Extra High when the model offers it, for any provider", () => {
+    expect(suggestedThinking(ids("low", "medium", "high", "xhigh", "max", "ultracode"))).toBe("xhigh");
+    expect(suggestedThinking(ids("low", "medium", "high", "xhigh", "max", "ultra"))).toBe("xhigh");
+  });
+  it("keeps the model's own default when Extra High is not offered", () => {
+    expect(suggestedThinking(ids("low", "medium", "high", "max"))).toBe("");
+    expect(suggestedThinking([])).toBe("");
+    expect(suggestedThinking()).toBe("");
+  });
 });

@@ -67,7 +67,12 @@ export function sessionSpeed(features: readonly ProviderFeature[] | null | undef
   return value && !feature.options?.find((o) => o.id === value)?.isDefault ? value : "";
 }
 
-/** Suggested speed; an explicit normal selection (empty string) is preserved. */
-export function suggestedSpeed(provider: string, remembered?: string): string {
-  return remembered ?? (provider === "codex" ? FAST_SPEED : "");
+/** Codex's Fast tier: `priority` in the current daemon; `fast` where a daemon names it so. */
+const CODEX_FAST = ["priority", FAST_SPEED];
+
+/** Suggested speed; an explicit normal selection (empty string) is preserved. For Codex, its Fast tier among `offered`. */
+export function suggestedSpeed(provider: string, remembered?: string, offered: readonly { id: string }[] = []): string {
+  if (remembered !== undefined) return remembered;
+  if (provider !== "codex") return "";
+  return CODEX_FAST.find((id) => offered.some((o) => o.id === id)) ?? FAST_SPEED;
 }

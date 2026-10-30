@@ -85,3 +85,12 @@ it("defaults Codex to fast while preserving explicit normal and other tiers", ()
   expect(suggestedSpeed("codex", "flex")).toBe("flex");
   expect(suggestedSpeed("claude")).toBe("");
 });
+
+it("suggests Codex's Fast tier by the id the daemon offers", () => {
+  // Paseo's Codex service tiers: default (Normal), priority (Fast), ultrafast (Ultrafast).
+  const live = [{ id: "priority" }, { id: "ultrafast" }];
+  expect(suggestedSpeed("codex", undefined, live)).toBe("priority");
+  expect(suggestedSpeed("codex", undefined, [{ id: "fast" }])).toBe("fast");
+  expect(suggestedSpeed("codex", "", live)).toBe("");
+  expect(suggestedSpeed("claude", undefined, [{ id: "fast" }])).toBe("");
+});

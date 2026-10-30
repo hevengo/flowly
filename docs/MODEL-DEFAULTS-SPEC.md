@@ -28,7 +28,7 @@ A project default replaces the global one as a whole (provider, model and reason
 - **Settings → Models**: *Default model* (Provider, Model, Reasoning) and *Summary models* (an ordered fallback list; see [SUMMARY-MODELS-SPEC](SUMMARY-MODELS-SPEC.md)). Provider's first choice is **Automatic** (no default). Choosing a provider also chooses its default model, so a default is always complete.
 - **Project settings → Default model**: the same three rows; the provider's first choice reads **Global default (…)** (the current global one, or Automatic) and means "no override".
 - A **Permissions** row (the provider's modes; "Same as latest session" keeps none: the form then keeps the latest session's mode when it uses the same provider, else the provider default) follows Reasoning; changing the provider clears it, since mode ids belong to a provider.
-- The Reasoning row only appears when the model offers options; "Model default" keeps the model's own.
+- The Reasoning row only appears when the model offers options; "Model default" stores no reasoning, so the session form suggests Extra High when the model offers it (see "Reasoning default"), else the model's own.
 - A default model has no speed. The session form keeps the latest session's speed when the default uses the same provider ([AGENT-SPEED-SPEC](AGENT-SPEED-SPEC.md)).
 
 ## 5. Acceptance
@@ -38,3 +38,9 @@ A project default replaces the global one as a whole (provider, model and reason
 ## Automatic approval default (2026-10-29)
 
 New card/session pickers suggest Claude `auto` and Codex `auto-review` when no explicit or remembered permission mode is set. Applies on initial selection, reset and provider switch. Explicit model defaults and remembered selections win. Unsupported modes fall back to the provider default. Existing sessions are unchanged.
+
+Custom providers that extend Claude or Codex (`claude-connected`, `codex-connected`, …) get the same suggestions (2026-10-30). Paseo does not tell clients what a custom provider extends, so `providerBase` in `shared/agent-defaults.ts` recognises it by its permission modes: `auto-review` means Codex, `acceptEdits` plus `bypassPermissions` means Claude; any other provider gets no suggestion. The suggestion is worked out in the picker (`client/agent-choice.tsx`) for a mode not chosen yet, once the provider's modes are listed; the form cannot be submitted before that. `startingAgent` passes only remembered values on.
+
+## Reasoning default (2026-10-30)
+
+New card/session pickers suggest reasoning `xhigh` (Extra High) for any provider whose chosen model offers it, when no reasoning is chosen or remembered (`suggestedThinking` in `shared/agent-defaults.ts`). Applies on initial selection, reset, provider switch and model switch. A model without `xhigh` (for example GLM 5.3) keeps its own default. An explicit pick in the form, including **Model default**, a default model's stored reasoning and the latest session's reasoning win; a latest session that ran at the model default counts as no reasoning remembered, like the permission mode.

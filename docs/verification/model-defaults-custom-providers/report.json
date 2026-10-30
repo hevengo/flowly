@@ -1,0 +1,130 @@
+{
+  "at": "2026-10-30T16:18:39.545Z",
+  "steps": [
+    {
+      "name": "Codex, Connected: Permissions = Auto-review",
+      "ok": true,
+      "detail": "Provider: Codex, Connected | Model: GPT-6.1-Sol | Reasoning: xhigh | Speed: Fast | Permissions: Auto-review"
+    },
+    {
+      "name": "Codex, Connected: Reasoning = xhigh",
+      "ok": true,
+      "detail": "Reasoning row: xhigh"
+    },
+    {
+      "name": "Codex, Connected: Speed = Fast",
+      "ok": true,
+      "detail": "Speed row: Fast"
+    },
+    {
+      "name": "Claude Code, Connected: Permissions = Auto mode",
+      "ok": true,
+      "detail": "Provider: Claude Code, Connected | Model: Opus 5.5 | Reasoning: Extra High | Speed: Standard | Permissions: Auto mode"
+    },
+    {
+      "name": "Claude Code, Connected: Reasoning = Extra High",
+      "ok": true,
+      "detail": "Reasoning row: Extra High"
+    },
+    {
+      "name": "Claude Code, Connected: Speed (info)",
+      "ok": true,
+      "detail": "Speed row: Standard"
+    },
+    {
+      "name": "Claude Code, GLM 5.3: Permissions = Auto mode",
+      "ok": true,
+      "detail": "Provider: Claude Code, GLM 5.3 | Model: GLM 5.3 (Mistral ZDR NVFP4) | Reasoning: Model default (High) | Permissions: Auto mode"
+    },
+    {
+      "name": "Claude Code, GLM 5.3: Reasoning = Model default (High)",
+      "ok": true,
+      "detail": "Reasoning row: Model default (High)"
+    },
+    {
+      "name": "Claude Code, GLM 5.3: Speed (info)",
+      "ok": true,
+      "detail": "Speed row: absent"
+    },
+    {
+      "name": "Codex: Permissions = Auto-review",
+      "ok": true,
+      "detail": "Provider: Codex | Model: GPT-6.1-Sol | Reasoning: xhigh | Speed: Fast | Permissions: Auto-review"
+    },
+    {
+      "name": "Codex: Reasoning = xhigh",
+      "ok": true,
+      "detail": "Reasoning row: xhigh"
+    },
+    {
+      "name": "Codex: Speed = Fast",
+      "ok": true,
+      "detail": "Speed row: Fast"
+    },
+    {
+      "name": "Claude: Permissions = Auto mode",
+      "ok": true,
+      "detail": "Provider: Claude | Model: Opus 5.5 | Reasoning: Extra High | Speed: Standard | Permissions: Auto mode"
+    },
+    {
+      "name": "Claude: Reasoning = Extra High",
+      "ok": true,
+      "detail": "Reasoning row: Extra High"
+    },
+    {
+      "name": "Claude: Speed (info)",
+      "ok": true,
+      "detail": "Speed row: Standard"
+    },
+    {
+      "name": "No page errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "rows": {
+    "codex-connected": [
+      "Provider: Codex, Connected",
+      "Model: GPT-6.1-Sol",
+      "Reasoning: xhigh",
+      "Speed: Fast",
+      "Permissions: Auto-review"
+    ],
+    "claude-connected": [
+      "Provider: Claude Code, Connected",
+      "Model: Opus 5.5",
+      "Reasoning: Extra High",
+      "Speed: Standard",
+      "Permissions: Auto mode"
+    ],
+    "claude-glm-fast": [
+      "Provider: Claude Code, GLM 5.3",
+      "Model: GLM 5.3 (Mistral ZDR NVFP4)",
+      "Reasoning: Model default (High)",
+      "Permissions: Auto mode"
+    ],
+    "codex": [
+      "Provider: Codex",
+      "Model: GPT-6.1-Sol",
+      "Reasoning: xhigh",
+      "Speed: Fast",
+      "Permissions: Auto-review"
+    ],
+    "claude": [
+      "Provider: Claude",
+      "Model: Opus 5.5",
+      "Reasoning: Extra High",
+      "Speed: Standard",
+      "Permissions: Auto mode"
+    ]
+  },
+  "initial": [
+    "Provider: Codex",
+    "Model: GPT-6.1-Sol",
+    "Reasoning: xhigh",
+    "Speed: Ultrafast",
+    "Permissions: Auto-review"
+  ],
+  "pageErrors": [],
+  "restoredStartAgentOff": true
+}
