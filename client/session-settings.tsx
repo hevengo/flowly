@@ -5,13 +5,14 @@ import { usePaseo, useRpc } from "@getpaseo/plugin/client";
 import { useQuery } from "@tanstack/react-query";
 import type { PaseoAgent } from "@getpaseo/client";
 import * as rpc from "../shared/rpc";
+import { sessionSpeed, speedFeature } from "../shared/agent-speed";
 import { Label, font, message, noFocusRing, radius, space, tint, touch, useTheme } from "./ui";
 import { useMotionPresence, lerp } from "./motion";
 import { t } from "../shared/i18n";
 
 type Feature = NonNullable<PaseoAgent["features"]>[number];
 /** Composer popups; "subagents" is the Subagents chip (SUBAGENTS-SPEC). */
-export type ChipMenuId = "model" | "thinking" | "mode" | "subagents";
+export type ChipMenuId = "model" | "thinking" | "speed" | "mode" | "subagents";
 
 const featureValue = (f: Feature) =>
   f.type === "toggle"
@@ -42,6 +43,10 @@ export function useSessionConfig(taskId: string, agent: PaseoAgent | undefined, 
   const model = models.data?.models?.find((m) => m.id === agent?.model);
   const thinking = model?.thinkingOptions || [];
   const currentThinking = agent?.thinkingOptionId || model?.defaultThinkingOptionId || "";
+  // Speed is a provider feature of the session (AGENT-SPEED-SPEC); "" is the provider's normal speed.
+  const speed = speedFeature(agent?.features);
+  const currentSpeed = sessionSpeed(agent?.features);
+  const normalSpeed = speed?.normalLabel || t("Standard");
   async function apply(change: { thinkingOptionId?: string; modeId?: string; stop?: boolean; title?: string }, done: string) {
     if (!agent) return false;
     try {
@@ -60,6 +65,10 @@ export function useSessionConfig(taskId: string, agent: PaseoAgent | undefined, 
     thinking,
     currentThinking,
     thinkingLabel: thinking.find((t) => t.id === currentThinking)?.label || "",
+    speed,
+    currentSpeed,
+    normalSpeed,
+    speedLabel: speed ? speed.options.find((o) => o.id === currentSpeed)?.label || currentSpeed || normalSpeed : "",
     modes: agent?.availableModes || [],
     modeLabel: agent?.availableModes?.find((m) => m.id === agent.currentModeId)?.label || "",
     currentMode: agent?.currentModeId || "",
@@ -180,7 +189,7 @@ export function ChipMenu({ open, items, inline, footer }: { open: boolean; items
   );
 }
 
-/** Model · Reasoning · Permissions chips under the composer (Paseo layout). */
+/** Model · Reasoning · Speed · Permissions chips under the composer (Paseo layout). */
 export function ComposerChips({
   config,
   menu,
@@ -198,7 +207,20 @@ export function ComposerChips({
 }) {
   const { colors } = useTheme();
   const toggle = (id: ChipMenuId) => setMenu(menu === id ? null : id);
-  const fast = config.features.filter((f) => f.type === "toggle" && f.value);
+  // The speed feature has its own chip; other features stay with the model.
+  const features = config.features.filter((f) => f.id !== config.speed?.featureId);
+  const toggles = features.filter((f) => f.type === "toggle" && f.value);
+  const readOnly = (
+    <View style={{ padding: space[2], gap: space[1.5], borderTopWidth: 1, borderColor: colors.border, marginTop: 4 }}>
+      <Label muted size={font.xs}>{t("Plugins cannot switch the model or features like Fast mode yet.")}</Label>
+      {onOpenInPaseo && (
+        <Pressable accessibilityRole="button" onPress={onOpenInPaseo} style={{ ...noFocusRing, flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Icon name="ArrowUpRight" size={13} color={colors.accent} />
+          <Label size={font.sm} medium color={colors.accent} selectable={false}>{t("Change in Paseo")}</Label>
+        </Pressable>
+      )}
+    </View>
+  );
   const menuFor = (id: ChipMenuId) =>
     id === "model" ? (
       <ChipMenu
@@ -206,19 +228,19 @@ export function ComposerChips({
         inline={inline}
         items={[
           { id: "current", label: config.modelLabel, detail: t("Current model"), selected: true },
-          ...config.features.map((f) => ({ id: f.id, label: f.label, detail: featureValue(f) })),
+          ...features.map((f) => ({ id: f.id, label: f.label, detail: featureValue(f) })),
         ]}
-        footer={
-          <View style={{ padding: space[2], gap: space[1.5], borderTopWidth: 1, borderColor: colors.border, marginTop: 4 }}>
-            <Label muted size={font.xs}>{t("Plugins cannot switch the model or features like Fast mode yet.")}</Label>
-            {onOpenInPaseo && (
-              <Pressable accessibilityRole="button" onPress={onOpenInPaseo} style={{ ...noFocusRing, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Icon name="ArrowUpRight" size={13} color={colors.accent} />
-                <Label size={font.sm} medium color={colors.accent} selectable={false}>{t("Change in Paseo")}</Label>
-              </Pressable>
-            )}
-          </View>
-        }
+        footer={readOnly}
+      />
+    ) : id === "speed" ? (
+      <ChipMenu
+        open={menu === "speed"}
+        inline={inline}
+        items={[
+          { id: "normal", label: config.normalSpeed, selected: !config.currentSpeed },
+          ...(config.speed?.options || []).map((o) => ({ id: o.id, label: o.label, detail: o.description, selected: o.id === config.currentSpeed })),
+        ]}
+        footer={readOnly}
       />
     ) : id === "thinking" ? (
       <ChipMenu
@@ -262,11 +284,15 @@ export function ComposerChips({
     <View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 2 }}>
         {chip("model", (
-          <Chip icon="Cpu" text={`${config.modelLabel}${fast.length ? ` · ${fast.map((f) => f.label).join(", ")}` : ""}`} label={t("Model: {modelLabel}", { modelLabel: config.modelLabel })} open={menu === "model"} disabled={disabled} onPress={() => toggle("model")} />
+          <Chip icon="Cpu" text={`${config.modelLabel}${toggles.length ? ` · ${toggles.map((f) => f.label).join(", ")}` : ""}`} label={t("Model: {modelLabel}", { modelLabel: config.modelLabel })} open={menu === "model"} disabled={disabled} onPress={() => toggle("model")} />
         ))}
         {config.thinking.length > 0 &&
           chip("thinking", (
             <Chip icon="Brain" text={config.thinkingLabel || t("Reasoning")} label={t("Reasoning: {label}", { label: config.thinkingLabel || t("default") })} open={menu === "thinking"} disabled={disabled} onPress={() => toggle("thinking")} />
+          ))}
+        {!!config.speed &&
+          chip("speed", (
+            <Chip icon="Zap" text={config.speedLabel} label={t("Speed: {label}", { label: config.speedLabel })} open={menu === "speed"} disabled={disabled} onPress={() => toggle("speed")} />
           ))}
         {config.modes.length > 0 &&
           chip("mode", (

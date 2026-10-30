@@ -543,6 +543,7 @@ const catalog: Catalog = {
   "Plugins cannot switch the model or features like Fast mode yet.": "外掛目前無法切換模型，也無法切換 Fast 模式等功能。",
   "Change in Paseo": "在 Paseo 中更改",
   "Reasoning: {label}": "推理強度：{label}",
+  "Speed: {label}": "速度：{label}",
   "Permissions: {label}": "許可權：{label}",
   "Model: {modelLabel}": "模型：{modelLabel}",
   "default": "預設",

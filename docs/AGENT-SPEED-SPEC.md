@@ -25,6 +25,7 @@ Other features (Codex Plan, ACP auto-accept and ACP config options) are not spee
 - Changing the provider clears the speed for other providers. A model that does not offer the chosen speed falls back to normal speed, like reasoning.
 - Starting point: the latest session's speed is read from its snapshot's features (`sessionSpeed`, `lastSessionSettings`). With a default model (MODEL-DEFAULTS-SPEC) it is kept only when the default uses the same provider (`startingAgent`). While a remembered speed is still being checked against the model's features, the form cannot be submitted yet, so it is never dropped silently by a fast click.
 - The speed of a running session is not changed from Flowly: the plugin SDK and the `paseo` CLI have no call to set a feature on a running agent. Use Paseo's own session controls.
+- The card's session composer shows it (`client/session-settings.tsx`): a **Speed** chip after Reasoning, only when the session's snapshot features carry a speed choice. It names the speed the session runs at (`sessionSpeed`: the option's label, else the provider's normal label or **Standard**); its menu lists normal and the faster speeds with the current one selected, read-only with **Change in Paseo**. The Model chip no longer repeats the speed feature.
 - Default models (Settings → Models, project default) do not store a speed.
 
 ## 3. Acceptance

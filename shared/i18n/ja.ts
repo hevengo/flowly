@@ -543,6 +543,7 @@ const catalog: Catalog = {
   "Plugins cannot switch the model or features like Fast mode yet.": "プラグインからはまだモデルや Fast モードなどの機能を切り替えられません。",
   "Change in Paseo": "Paseo で変更",
   "Reasoning: {label}": "推論：{label}",
+  "Speed: {label}": "速度：{label}",
   "Permissions: {label}": "権限：{label}",
   "Model: {modelLabel}": "モデル：{modelLabel}",
   "default": "デフォルト",

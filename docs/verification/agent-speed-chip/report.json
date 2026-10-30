@@ -1,0 +1,73 @@
+{
+  "at": "2026-10-30T16:06:07.988Z",
+  "steps": [
+    {
+      "name": "Claude: Speed chip right after Reasoning",
+      "ok": true,
+      "detail": "Model: Opus 5.5 | Reasoning: Extra High | Speed: Standard | Permissions: Auto mode"
+    },
+    {
+      "name": "Claude: Speed chip reads Standard (fast mode off)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Claude: Model chip no longer repeats the speed",
+      "ok": true,
+      "detail": "Opus 5.5"
+    },
+    {
+      "name": "Claude: Speed menu lists Standard and Fast with the cost note",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Claude: Speed menu is read-only with Change in Paseo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Claude: Standard is the checked speed",
+      "ok": true,
+      "detail": "Standard"
+    },
+    {
+      "name": "Codex: Speed chip right after Reasoning",
+      "ok": true,
+      "detail": "Model: GPT-6.1-Sol | Reasoning: xhigh | Speed: Fast | Permissions: Default Permissions"
+    },
+    {
+      "name": "Codex: Speed chip reads Fast (service_tier priority)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Codex: Model chip no longer repeats the speed",
+      "ok": true,
+      "detail": "GPT-6.1-Sol"
+    },
+    {
+      "name": "Codex: Speed menu lists Normal, Fast and Ultrafast with the usage note",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Codex: Fast is the checked speed",
+      "ok": true,
+      "detail": "Fast"
+    }
+  ],
+  "claudeChips": [
+    "Model: Opus 5.5",
+    "Reasoning: Extra High",
+    "Speed: Standard",
+    "Permissions: Auto mode"
+  ],
+  "codexSession": "9b956f33-e861-401f-baa6-442e498ec6ed",
+  "codexChips": [
+    "Model: GPT-6.1-Sol",
+    "Reasoning: xhigh",
+    "Speed: Fast",
+    "Permissions: Default Permissions"
+  ]
+}

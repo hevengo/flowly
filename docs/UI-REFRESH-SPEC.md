@@ -89,8 +89,9 @@ Status: authorized by the user's 2026-10-14 request to redesign the whole Kanban
 
 ## 7i. Composer parity, persistence, context menus, motion (2026-10-15, user request)
 
-- **Composer chips (Paseo layout)**: under the session input, chips for Model · Reasoning · Permissions open upward menus (desktop) or inline lists (native sheet).
-  - Reasoning and permissions apply on selection; the model menu shows the model and provider features (e.g. Fast mode) read-only with "Change in Paseo".
+- **Composer chips (Paseo layout)**: under the session input, chips for Model · Reasoning · Speed · Permissions open upward menus (desktop) or inline lists (native sheet).
+  - Reasoning and permissions apply on selection; the model menu shows the model and its other provider features (e.g. Codex Plan) read-only with "Change in Paseo".
+  - Speed (2026-10-30, card "show selected agent speed setting"): shown only when the session's model offers one (AGENT-SPEED-SPEC); the chip names the speed the session runs at, its menu lists normal and faster speeds read-only with "Change in Paseo".
   - A running session with an empty input shows Stop in place of Send.
   - The header "Session settings" button is removed (superseded).
 - **Persistence**: unsent drafts and queued follow-ups live on the daemon (`composer.json`: serialized writes, atomic replace, invalid files preserved), so plugin reload and app refresh keep them.

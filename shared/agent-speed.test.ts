@@ -67,6 +67,16 @@ describe("sessionSpeed", () => {
     expect(sessionSpeed([claudeFast(false)])).toBe("");
     expect(sessionSpeed(null)).toBe("");
   });
+
+  it("names a session's tier among several faster ones (composer Speed chip)", () => {
+    const tiers = {
+      ...codexSpeed("ultrafast"),
+      options: [...codexSpeed().options, { id: "ultrafast", label: "Ultrafast" }],
+    };
+    const choice = speedFeature([tiers, codexPlan]);
+    expect(choice?.options.map((o) => o.label)).toEqual(["Fast", "Ultrafast"]);
+    expect(choice?.options.find((o) => o.id === sessionSpeed([tiers]))?.label).toBe("Ultrafast");
+  });
 });
 
 it("defaults Codex to fast while preserving explicit normal and other tiers", () => {
